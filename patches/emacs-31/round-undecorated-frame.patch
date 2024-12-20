@@ -27,10 +27,10 @@ index 5518201fca7..f85dd6896ab 100644
    DEFSYM (Qparent_frame, "parent-frame");
    DEFSYM (Qskip_taskbar, "skip-taskbar");
 diff --git a/src/frame.h b/src/frame.h
-index 9b1121df829..096bf7d1b16 100644
+index cb03d5550bb..7020d48edab 100644
 --- a/src/frame.h
 +++ b/src/frame.h
-@@ -446,6 +446,9 @@ struct frame
+@@ -445,6 +445,9 @@ struct frame
    /* True if this is an undecorated frame.  */
    bool_bf undecorated : 1;
  
@@ -40,7 +40,7 @@ index 9b1121df829..096bf7d1b16 100644
    /* Nonzero if this frame's window does not want to receive input focus
       via mouse clicks or by moving the mouse into it.  */
    bool_bf no_accept_focus : 1;
-@@ -1238,7 +1241,7 @@ FRAME_PARENT_FRAME (struct frame *f)
+@@ -1237,7 +1240,7 @@ FRAME_PARENT_FRAME (struct frame *f)
  }
  
  #define FRAME_UNDECORATED(f) ((f)->undecorated)
@@ -50,7 +50,7 @@ index 9b1121df829..096bf7d1b16 100644
  #ifdef HAVE_NTGUI
  #define FRAME_OVERRIDE_REDIRECT(f) ((void) (f), 0)
 diff --git a/src/nsfns.m b/src/nsfns.m
-index a411cdd7d22..763dbef3e4a 100644
+index 1055a4b37df..03b23e8a2fe 100644
 --- a/src/nsfns.m
 +++ b/src/nsfns.m
 @@ -1102,6 +1102,7 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
@@ -71,8 +71,8 @@ index a411cdd7d22..763dbef3e4a 100644
 +  store_frame_param (f, Qundecorated_round, FRAME_UNDECORATED_ROUND (f) ? Qt : Qnil);
 +
  #ifdef NS_IMPL_COCOA
- #ifndef NSAppKitVersionNumber10_14
- #define NSAppKitVersionNumber10_14 1671
+   tem = gui_display_get_arg (dpyinfo, parms, Qns_appearance, NULL, NULL,
+                              RES_TYPE_SYMBOL);
 diff --git a/src/nsterm.h b/src/nsterm.h
 index 6c67653705e..f308b3443d9 100644
 --- a/src/nsterm.h
@@ -87,7 +87,7 @@ index 6c67653705e..f308b3443d9 100644
                                   Lisp_Object old_value);
  extern void ns_set_no_focus_on_map (struct frame *f, Lisp_Object new_value,
 diff --git a/src/nsterm.m b/src/nsterm.m
-index ee844830306..3963a73e9fa 100644
+index c705a3c78f4..8237241c2c1 100644
 --- a/src/nsterm.m
 +++ b/src/nsterm.m
 @@ -1810,6 +1810,44 @@ Hide the window (X11 semantics)
@@ -135,7 +135,7 @@ index ee844830306..3963a73e9fa 100644
  void
  ns_set_parent_frame (struct frame *f, Lisp_Object new_value, Lisp_Object old_value)
  /* --------------------------------------------------------------------------
-@@ -9374,6 +9412,11 @@ - (instancetype) initWithEmacsFrame: (struct frame *) f
+@@ -9277,6 +9315,11 @@ - (instancetype) initWithEmacsFrame: (struct frame *) f
  		 | NSWindowStyleMaskMiniaturizable
  		 | NSWindowStyleMaskClosable);
  
@@ -147,7 +147,7 @@ index ee844830306..3963a73e9fa 100644
    last_drag_event = nil;
  
    width = FRAME_TEXT_COLS_TO_PIXEL_WIDTH (f, f->text_cols);
-@@ -9457,6 +9500,15 @@ - (instancetype) initWithEmacsFrame: (struct frame *) f
+@@ -9360,6 +9403,15 @@ - (instancetype) initWithEmacsFrame: (struct frame *) f
  #endif
      }
  
@@ -163,7 +163,7 @@ index ee844830306..3963a73e9fa 100644
    return self;
  }
  
-@@ -9465,6 +9517,7 @@ - (void)createToolbar: (struct frame *)f
+@@ -9368,6 +9420,7 @@ - (void)createToolbar: (struct frame *)f
  {
    if (FRAME_UNDECORATED (f)
        || [self styleMask] == NSWindowStyleMaskBorderless
