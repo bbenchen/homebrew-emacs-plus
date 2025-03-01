@@ -208,7 +208,7 @@ class EmacsPlusAT29 < EmacsBase
 
       # (prefix/"share/emacs/#{version}").install "lisp"
       prefix.install "nextstep/Emacs.app"
-      # (prefix/"Emacs.app/Contents").install "native-lisp" if build.with? "native-comp"
+      (prefix/"Emacs.app/Contents").install "native-lisp" if build.with? "native-comp"
 
       # inject PATH to Info.plist
       inject_path
@@ -271,9 +271,9 @@ class EmacsPlusAT29 < EmacsBase
     Dir.glob(emacs_info_dir/"*.info") do |info_filename|
       system "install-info", "--info-dir=#{emacs_info_dir}", info_filename
     end
-    if build.with? "native-comp"
-      ln_sf "#{Dir[opt_prefix/"lib/emacs/*"].first}/native-lisp", "#{opt_prefix}/Emacs.app/Contents/native-lisp"
-    end
+    # if build.with? "native-comp"
+    #   ln_sf "#{Dir[opt_prefix/"lib/emacs/*"].first}/native-lisp", "#{opt_prefix}/Emacs.app/Contents/native-lisp"
+    # end
   end
 
   def caveats

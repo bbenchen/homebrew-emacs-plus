@@ -207,7 +207,7 @@ class EmacsPlusAT31 < EmacsBase
 
       # (prefix/"share/emacs/#{version}").install "lisp"
       prefix.install "nextstep/Emacs.app"
-      # (prefix/"Emacs.app/Contents").install "native-lisp"
+      (prefix/"Emacs.app/Contents").install "native-lisp"
 
       # inject PATH to Info.plist
       inject_path
@@ -271,7 +271,7 @@ class EmacsPlusAT31 < EmacsBase
       system "install-info", "--info-dir=#{emacs_info_dir}", info_filename
     end
 
-    ln_sf "#{Dir[opt_prefix/"lib/emacs/*"].first}/native-lisp", "#{opt_prefix}/Emacs.app/Contents/native-lisp"
+    # ln_sf "#{Dir[opt_prefix/"lib/emacs/*"].first}/native-lisp", "#{opt_prefix}/Emacs.app/Contents/native-lisp"
   end
 
   def caveats
