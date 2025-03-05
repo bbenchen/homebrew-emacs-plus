@@ -96,7 +96,7 @@ class EmacsPlusAT31 < EmacsBase
   local_patch "fix-window-role", sha: "1f8423ea7e6e66c9ac6dd8e37b119972daa1264de00172a24a79a710efcb8130"
   local_patch "system-appearance", sha: "9eb3ce80640025bff96ebaeb5893430116368d6349f4eb0cb4ef8b3d58477db6"
   local_patch "round-undecorated-frame", sha: "d22c631b33b6ffd8e4204beb7b81b37a9bca9ab9a787279c83bc4fe118549f20"
-  local_patch "native-sharing", sha: "75f3e7ca136c3901582d8ee3fb5a9833ba010280e13097048c9dd3405f18a178"
+  local_patch "native-sharing", sha: "9da832d581d2e3ba26c7f8a9a3bca97511480986c2a7038da29a60659069a1a7"
 
   if build.with? "alpha-background"
     local_patch "alpha-background", sha: "3b7dfcefdf60c8ade66ac9818bdc0d83b90cb61bf0d3195b2c8d923c4714a681"
