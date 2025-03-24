@@ -13,7 +13,7 @@ index 62b2edcb315..49b9829a6b1 100644
  #endif
  #endif /* HAVE_WINDOW_SYSTEM */
 diff --git a/src/nsterm.m b/src/nsterm.m
-index 5514a693c86..913024fa7a7 100644
+index 5514a693c86..bfa7158eb5f 100644
 --- a/src/nsterm.m
 +++ b/src/nsterm.m
 @@ -1935,11 +1935,25 @@ Hide the window (X11 semantics)
@@ -154,15 +154,6 @@ index 5514a693c86..913024fa7a7 100644
  
  
  /* ==========================================================================
-@@ -9728,7 +9825,7 @@ - (id)accessibilityAttributeValue:(NSString *)attribute
-   NSTRACE ("[EmacsWindow accessibilityAttributeValue:]");
- 
-   if ([attribute isEqualToString:NSAccessibilityRoleAttribute])
--    return NSAccessibilityTextFieldRole;
-+    return NSAccessibilityWindowRole;
- 
-   if ([attribute isEqualToString:NSAccessibilitySelectedTextAttribute]
-       && curbuf && ! NILP (BVAR (curbuf, mark_active)))
 @@ -9971,17 +10068,26 @@ - (void)setAppearance
  #define NSAppKitVersionNumber10_10 1343
  #endif
