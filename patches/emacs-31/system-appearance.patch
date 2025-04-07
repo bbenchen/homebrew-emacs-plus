@@ -1,8 +1,65 @@
+Patch to make emacs 28 aware of the macOS 10.14+ system appearance changes.
+
+From 6e73cd55ebfd3b0967357b3c3ead16d2f8539526 Mon Sep 17 00:00:00 2001
+From: "Nicolas G. Querol" <nicolas.gquerol@gmail.com>
+Date: Wed, 11 Nov 2020 12:35:47 +0100
+Subject: [PATCH] Add `ns-system-appearance-change-functions' hook
+
+This implements a new hook, effective only on macOS >= 10.14 (Mojave),
+that is called when the system changes its appearance (e.g. from light
+to dark). Users can then implement functions that take this change
+into account, for instance to load a particular theme.
+
+Minor changes are also made to select the right "dark" appearance
+(NSAppearanceNameDarkAqua) on macOS versions >= 10.14, the previous one
+(NSAppearanceNameVibrantDark) being deprecated.
+
+* src/frame.h (enum ns_appearance_type): Add new
+"ns_appearance_dark_aqua" case.
+
+* src/nsfns.m (defun x-create-frame): Use "dark aqua" appearance on
+macOS >= 10.14.
+
+* src/nsterm.m:
+  - (ns_set_appearance): Use "dark aqua" appearance on
+     macOS >= 10.14, reset appearance to the system one
+     if `ns-appearance' frame parameter is not set to
+     either `dark' or `light'.
+  - (initFrameFromEmacs): Use "dark aqua" appearance on
+     macOS >= 10.14.
+  - (EmacsApp) Add the `systemDidChangeAppearance' private method,
+    as well as the appropriate Key-Value Observing calls to update
+    the frame's appearance when the system (and thus the app's)
+    appearance changes.
+  - Add `ns-system-appearance-change-functions' hook variable and
+    symbol, to allow users to add functions that react to the
+    change of the system's appearance.
+  - Add `ns-system-appearance' variable, to allow users to consult
+    the current system appearance.
+
+Here is an example on how to use this new feature:
+
+    (defun my/load-theme (appearance)
+      "Load theme, taking current system APPEARANCE into consideration."
+      (mapc #'disable-theme custom-enabled-themes)
+      (pcase appearance
+        ('light (load-theme 'tango t))
+        ('dark (load-theme 'tango-dark t))))
+
+    (add-hook 'ns-system-appearance-change-functions #'my/load-theme)
+
+The hook being run on each system appearance change as well as at
+startup time, Emacs should then always load the appropriate theme.
+---
+ src/frame.h  |   3 +-
+ src/nsterm.m | 153 ++++++++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 141 insertions(+), 15 deletions(-)
+
 diff --git a/src/frame.h b/src/frame.h
 index 62b2edcb315..49b9829a6b1 100644
 --- a/src/frame.h
 +++ b/src/frame.h
-@@ -71,7 +71,8 @@ enum ns_appearance_type
+@@ -71,7 +71,8 @@ #define EMACS_FRAME_H
    {
      ns_appearance_system_default,
      ns_appearance_aqua,
@@ -13,7 +70,7 @@ index 62b2edcb315..49b9829a6b1 100644
  #endif
  #endif /* HAVE_WINDOW_SYSTEM */
 diff --git a/src/nsterm.m b/src/nsterm.m
-index 5514a693c86..bfa7158eb5f 100644
+index 5514a693c86..ed3be1e2696 100644
 --- a/src/nsterm.m
 +++ b/src/nsterm.m
 @@ -1935,11 +1935,25 @@ Hide the window (X11 semantics)
@@ -21,6 +78,8 @@ index 5514a693c86..bfa7158eb5f 100644
  {
    if (EQ (new_value, Qdark))
 -    FRAME_NS_APPEARANCE (f) = ns_appearance_vibrant_dark;
+-  else if (EQ (new_value, Qlight))
+-    FRAME_NS_APPEARANCE (f) = ns_appearance_aqua;
 +    {
 +#if MAC_OS_X_VERSION_MAX_ALLOWED >= 101400
 +#ifndef NSAppKitVersionNumber10_14
@@ -32,13 +91,14 @@ index 5514a693c86..bfa7158eb5f 100644
 +#endif /* MAC_OS_X_VERSION_MAX_ALLOWED >= 101400 */
 +        FRAME_NS_APPEARANCE(f) = ns_appearance_vibrant_dark;
 +    }
-   else if (EQ (new_value, Qlight))
++  else if (EQ(new_value, Qlight))
 +    {
-     FRAME_NS_APPEARANCE (f) = ns_appearance_aqua;
++      FRAME_NS_APPEARANCE (f) = ns_appearance_aqua;
 +    }
    else
+-    FRAME_NS_APPEARANCE (f) = ns_appearance_system_default;
 +    {
-     FRAME_NS_APPEARANCE (f) = ns_appearance_system_default;
++      FRAME_NS_APPEARANCE (f) = ns_appearance_system_default;
 +    }
  }
  
@@ -217,3 +277,5 @@ index 5514a693c86..bfa7158eb5f 100644
    /* TODO: Move to common code.  */
    DEFVAR_LISP ("x-toolkit-scroll-bars", Vx_toolkit_scroll_bars,
  	       doc: /* SKIP: real doc in xterm.c.  */);
+-- 
+2.48.1
