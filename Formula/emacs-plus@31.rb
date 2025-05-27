@@ -22,6 +22,7 @@ class EmacsPlusAT31 < EmacsBase
   option "with-compress-install", "Build with compressed install optimization"
   option "with-alpha-background", "Experimental: build with alpha-background"
   option "with-blur-background", "Experimental: build with blur-background"
+  option "with-mps", "Experimental: use Memory Pool System garbage collector"
 
   #
   # Dependencies
@@ -72,11 +73,21 @@ class EmacsPlusAT31 < EmacsBase
   end
 
   #
+  # MPS
+  #
+
+  if build.with? "mps"
+    depends_on "libmps" => :recommended
+  end
+
+  #
   # URL
   #
 
   if ENV['HOMEBREW_EMACS_PLUS_31_REVISION']
     url "https://github.com/emacs-mirror/emacs.git", :revision => ENV['HOMEBREW_EMACS_PLUS_31_REVISION']
+  elsif build.with? "mps"
+    url "https://github.com/emacs-mirror/emacs.git", :branch => "feature/igc"
   else
     url "https://github.com/emacs-mirror/emacs.git", :branch => "master"
   end
@@ -169,6 +180,7 @@ class EmacsPlusAT31 < EmacsBase
     args << "--with-webp"
     args << "--without-pop" if build.with? "mailutils"
     args << "--with-xwidgets" if build.with? "xwidgets"
+    args << "--with-mps" if build.with? "mps"
 
     system "./autogen.sh"
 
