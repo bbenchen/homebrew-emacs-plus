@@ -20,6 +20,7 @@ class EmacsPlusAT31 < EmacsBase
   option "with-xwidgets", "Experimental: build with xwidgets support"
   option "with-no-frame-refocus", "Disables frame re-focus (ie. closing one frame does not refocus another one)"
   option "with-compress-install", "Build with compressed install optimization"
+  option "with-smooth-cursor", "Build with animated smooth cursor"
   option "with-alpha-background", "Experimental: build with alpha-background"
   option "with-blur-background", "Experimental: build with blur-background"
   option "with-mps", "Experimental: use Memory Pool System garbage collector"
@@ -106,6 +107,7 @@ class EmacsPlusAT31 < EmacsBase
   local_patch "fix-window-role", sha: "1f8423ea7e6e66c9ac6dd8e37b119972daa1264de00172a24a79a710efcb8130"
   local_patch "system-appearance", sha: "53283503db5ed2887e9d733baaaf80f2c810e668e782e988bda5855a0b1ebeb4"
   local_patch "round-undecorated-frame", sha: "32a11412552de126d537ac6e1ad1d5455bf78fa16ea6ab12e5e4c3c6f278276b"
+  local_patch "ksqsf-smooth-cursor", sha: "3bc5283437cc918718f6a92380313c1e468302b1028b98c17ef652c1cfbf18e2" if build.with? "smooth-cursor"
 
   if build.with? "alpha-background"
     local_patch "alpha-background", sha: "3b7dfcefdf60c8ade66ac9818bdc0d83b90cb61bf0d3195b2c8d923c4714a681"
