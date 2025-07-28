@@ -108,7 +108,7 @@ class EmacsPlusAT31 < EmacsBase
   local_patch "round-undecorated-frame", sha: "32a11412552de126d537ac6e1ad1d5455bf78fa16ea6ab12e5e4c3c6f278276b"
 
   if build.with? "alpha-background"
-    local_patch "alpha-background", sha: "3b7dfcefdf60c8ade66ac9818bdc0d83b90cb61bf0d3195b2c8d923c4714a681"
+    local_patch "alpha-background", sha: "f47e5bb264a0597f53517e1b83b10a67d49e48c5e23c63af5f5c46768962e87c"
   end
 
   if build.with? "blur-background"

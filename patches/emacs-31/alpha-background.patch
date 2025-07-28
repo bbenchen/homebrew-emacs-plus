@@ -1,5 +1,5 @@
 diff --git a/src/macfont.m b/src/macfont.m
-index e3b3d40df43..bf311c09378 100644
+index 2a0b9aa2554..6d000f1199b 100644
 --- a/src/macfont.m
 +++ b/src/macfont.m
 @@ -2994,9 +2994,15 @@ So we use CTFontDescriptorCreateMatchingFontDescriptor (no
@@ -28,10 +28,10 @@ index e3b3d40df43..bf311c09378 100644
          {
            if (face && (NS_FACE_BACKGROUND (face)
 diff --git a/src/nsfns.m b/src/nsfns.m
-index 3c012ca8f05..a45d2dfb988 100644
+index 3528c4acd50..0bf0ece9d61 100644
 --- a/src/nsfns.m
 +++ b/src/nsfns.m
-@@ -299,7 +299,7 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
+@@ -295,7 +295,7 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
    struct face *face;
    NSColor *col;
    NSView *view = FRAME_NS_VIEW (f);
@@ -40,7 +40,7 @@ index 3c012ca8f05..a45d2dfb988 100644
  
    block_input ();
    if (ns_lisp_to_color (arg, &col))
-@@ -314,11 +314,10 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
+@@ -310,11 +310,10 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
    f->output_data.ns->background_color = col;
  
    FRAME_BACKGROUND_PIXEL (f) = [col unsignedLong];
@@ -53,7 +53,7 @@ index 3c012ca8f05..a45d2dfb988 100644
  
        if (alpha != (EmacsCGFloat) 1.0)
            [[view window] setOpaque: NO];
-@@ -328,9 +327,7 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
+@@ -324,9 +323,7 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
        face = FRAME_DEFAULT_FACE (f);
        if (face)
          {
@@ -64,7 +64,7 @@ index 3c012ca8f05..a45d2dfb988 100644
  
            update_face_from_frame_parameter (f, Qbackground_color, arg);
          }
-@@ -345,6 +342,37 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
+@@ -341,6 +338,37 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
  }
  
  
@@ -102,20 +102,20 @@ index 3c012ca8f05..a45d2dfb988 100644
  static void
  ns_set_cursor_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
  {
-@@ -1109,7 +1137,7 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
+@@ -1105,7 +1133,7 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
    ns_set_z_group,
    0, /* x_set_override_redirect */
    gui_set_no_special_glyphs,
 -  gui_set_alpha_background,
 +  ns_set_alpha_background,
+   gui_set_borders_respect_alpha_background,
    NULL,
  #ifdef NS_IMPL_COCOA
-   ns_set_appearance,
 diff --git a/src/nsterm.m b/src/nsterm.m
-index 8862a74f129..e288a47e5b6 100644
+index 30a35bdd5b2..b89ae8706eb 100644
 --- a/src/nsterm.m
 +++ b/src/nsterm.m
-@@ -2627,8 +2627,10 @@ Hide the window (X11 semantics)
+@@ -2623,8 +2623,10 @@ Hide the window (X11 semantics)
  
    block_input ();
    ns_focus (f, &r, 1);
@@ -128,7 +128,7 @@ index 8862a74f129..e288a47e5b6 100644
    NSRectFill (r);
    ns_unfocus (f);
  
-@@ -2656,7 +2658,7 @@ Hide the window (X11 semantics)
+@@ -2652,7 +2654,7 @@ Hide the window (X11 semantics)
  
    r = NSIntersectionRect (r, [view frame]);
    ns_focus (f, &r, 1);
@@ -137,7 +137,7 @@ index 8862a74f129..e288a47e5b6 100644
  
    NSRectFill (r);
  
-@@ -2760,7 +2762,7 @@ Hide the window (X11 semantics)
+@@ -2756,7 +2758,7 @@ Hide the window (X11 semantics)
          return;
  
        ns_focus (f, NULL, 1);
@@ -146,7 +146,7 @@ index 8862a74f129..e288a47e5b6 100644
        NSRectFill (NSMakeRect (0, margin, width, border));
        NSRectFill (NSMakeRect (0, 0, border, height));
        NSRectFill (NSMakeRect (0, margin, width, border));
-@@ -2812,7 +2814,8 @@ Hide the window (X11 semantics)
+@@ -2808,7 +2810,8 @@ Hide the window (X11 semantics)
            NSRect r = NSMakeRect (0, y, FRAME_PIXEL_WIDTH (f), height);
            ns_focus (f, &r, 1);
  
@@ -156,17 +156,17 @@ index 8862a74f129..e288a47e5b6 100644
            NSRectFill (NSMakeRect (0, y, width, height));
            NSRectFill (NSMakeRect (FRAME_PIXEL_WIDTH (f) - width,
                                    y, width, height));
-@@ -2980,7 +2983,8 @@ Hide the window (X11 semantics)
-         {
-           NSTRACE_RECT ("clearRect", clearRect);
+@@ -3059,7 +3062,8 @@ Hide the window (X11 semantics)
+     {
+       NSTRACE_RECT ("clearRect", bmpRect);
  
--          [[NSColor colorWithUnsignedLong:face->background] set];
-+          [[[NSColor colorWithUnsignedLong:face->background]
+-      [[NSColor colorWithUnsignedLong:face->background] set];
++      [[[NSColor colorWithUnsignedLong:face->background]
 +             colorWithAlphaComponent: f->alpha_background] set];
-           NSRectFill (clearRect);
-         }
+       NSRectFill (bmpRect);
      }
-@@ -3012,7 +3016,7 @@ Hide the window (X11 semantics)
+ 
+@@ -3090,7 +3094,7 @@ Hide the window (X11 semantics)
        else
          bm_color = f->output_data.ns->cursor_color;
  
@@ -175,7 +175,7 @@ index 8862a74f129..e288a47e5b6 100644
        [bmp fill];
  
        [bmp release];
-@@ -3797,7 +3801,8 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -3875,7 +3879,8 @@ Function modeled after x_draw_glyph_string_box ().
    if (s->face->box == FACE_SIMPLE_BOX && s->face->box_color)
      {
        ns_draw_box (r, abs (hthickness), abs (vthickness),
@@ -185,7 +185,7 @@ index 8862a74f129..e288a47e5b6 100644
                     left_p, right_p);
      }
    else
-@@ -3842,7 +3847,8 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -3953,7 +3958,8 @@ Function modeled after x_draw_glyph_string_box ().
  	{
  	  if (s->hl != DRAW_CURSOR)
  	    [(NS_FACE_BACKGROUND (face) != 0
@@ -195,7 +195,7 @@ index 8862a74f129..e288a47e5b6 100644
  	      : FRAME_BACKGROUND_COLOR (s->f)) set];
  	  else if (face && (NS_FACE_BACKGROUND (face)
  			    == [(NSColor *) FRAME_CURSOR_COLOR (s->f)
-@@ -3981,7 +3987,8 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4094,7 +4100,8 @@ Function modeled after x_draw_glyph_string_box ().
       otherwise, since we composite the image under NS (instead of mucking
       with its background color), we must clear just the image area.  */
  
@@ -205,7 +205,7 @@ index 8862a74f129..e288a47e5b6 100644
  
    if (bg_height > s->slice.height || s->img->hmargin || s->img->vmargin
        || s->img->mask || s->img->pixmap == 0 || s->width != s->background_width)
-@@ -4051,7 +4058,8 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4164,7 +4171,8 @@ Function modeled after x_draw_glyph_string_box ().
    if (s->hl == DRAW_CURSOR)
      {
        [FRAME_CURSOR_COLOR (s->f) set];
@@ -215,7 +215,7 @@ index 8862a74f129..e288a47e5b6 100644
      }
    else
      tdCol = [NSColor colorWithUnsignedLong: NS_FACE_FOREGROUND (face)];
-@@ -4144,10 +4152,12 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4257,10 +4265,12 @@ Function modeled after x_draw_glyph_string_box ().
  		face = FACE_FROM_ID (s->f, MOUSE_FACE_ID);
  	      prepare_face_for_display (s->f, face);
  
@@ -230,9 +230,9 @@ index 8862a74f129..e288a47e5b6 100644
  	  NSRectFill (NSMakeRect (x, y, w, h));
  	}
      }
-@@ -4178,7 +4188,8 @@ Function modeled after x_draw_glyph_string_box ().
- 	  else if (s->stippled_p)
- 	    [[dpyinfo->bitmaps[s->face->stipple - 1].img stippleMask] set];
+@@ -4322,7 +4332,8 @@ Function modeled after x_draw_glyph_string_box ().
+ #endif /* NS_IMPL_COCOA */
+ 	    }
  	  else
 -	    [[NSColor colorWithUnsignedLong: s->face->background] set];
 +	    [[[NSColor colorWithUnsignedLong: s->face->background]
@@ -240,7 +240,7 @@ index 8862a74f129..e288a47e5b6 100644
  
  	  NSRectFill (NSMakeRect (x, s->y, background_width, s->height));
  	}
-@@ -8607,8 +8618,9 @@ - (void)toggleFullScreen: (id)sender
+@@ -8790,8 +8801,9 @@ - (void)toggleFullScreen: (id)sender
          }
  
        [w setContentView:[fw contentView]];
@@ -252,7 +252,7 @@ index 8862a74f129..e288a47e5b6 100644
          [w setOpaque: NO];
  
        f->border_width = [w borderWidth];
-@@ -9345,9 +9357,10 @@ - (instancetype) initWithEmacsFrame: (struct frame *) f
+@@ -9528,9 +9540,10 @@ - (instancetype) initWithEmacsFrame: (struct frame *) f
        f->border_width = [self borderWidth];
  
        col = [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND
