@@ -121,6 +121,7 @@ class EmacsPlusAT30 < EmacsBase
 
     args << "--with-xml2"
     args << "--with-gnutls"
+    args << "--with-sqlite3"
 
     args << "--without-compress-install" if build.without? "compress-install"
 
