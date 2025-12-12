@@ -53,7 +53,7 @@ class EmacsPlusAT30 < EmacsBase
   depends_on "gnutls"
   depends_on "librsvg"
   depends_on "little-cms2"
-  depends_on "tree-sitter@0.25"
+  depends_on "tree-sitter"
   depends_on "webp"
   depends_on "imagemagick" => :optional
   depends_on "dbus" => :optional
@@ -96,6 +96,7 @@ class EmacsPlusAT30 < EmacsBase
   local_patch "fix-window-role", sha: "1f8423ea7e6e66c9ac6dd8e37b119972daa1264de00172a24a79a710efcb8130"
   local_patch "system-appearance", sha: "9eb3ce80640025bff96ebaeb5893430116368d6349f4eb0cb4ef8b3d58477db6"
   local_patch "round-undecorated-frame", sha: "7451f80f559840e54e6a052e55d1100778abc55f98f1d0c038a24e25773f2874"
+  local_patch "tree-sitter-0.26", sha: "1780af19b84c1c07a869504863c63e6ea05cee64101e9278a2adcea191ae5b31"
 
   if build.with? "alpha-background"
     local_patch "alpha-background", sha: "5d045f4a13aedc0a76f04192d181d05a7e13544d5ac53392c87ee73244153609"
