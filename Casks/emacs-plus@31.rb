@@ -1,29 +1,29 @@
 cask "emacs-plus@31" do
   # Version format: <emacs-version>-<build-number>
   # Build number corresponds to GitHub Actions run number
-  version "31.0.50-15"
+  version "31.0.50-28"
 
   # Base URL for release assets (versioned releases: cask-31-<build>)
   base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-31-#{version.sub(/^[\d.]+-/, "")}"
   emacs_ver = version.sub(/-\d+$/, "")
 
   on_intel do
-    sha256 "faaa0bf410702324380f63f0c0715812cb356ad9540ab1b05bc41645eb57ea46"
+    sha256 "8b45f282ec2d7be4e3634444f1e23c17d1f7ca6bc7925c0eb8a889e167384e36"
     url "#{base_url}/emacs-plus-#{emacs_ver}-x86_64-15.zip",
         verified: "github.com/d12frosted/homebrew-emacs-plus"
   end
 
   on_arm do
     if MacOS.version >= :tahoe # macOS 26
-      sha256 "6e809806a65c79c35cb58c46f5d1ecd87d96aa6ab2190f7bc0b7b325142e4edd"
+      sha256 "40854a1e9b0f5a3dd3dd3baf40cbb19c34c59960cc5a7ed33d64d1e92e2c07be"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     elsif MacOS.version >= :sequoia # macOS 15
-      sha256 "1b94f7d37b3c5dd02f38c58165bad7358ba94f090ebc2715827f1b7e638c0bd8"
+      sha256 "19a6098225a8df0ceb0a6ec6c70f702ad947f83e88d509799f8120c91fcbcbf0"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     else # macOS 14 (Sonoma) and 13 (Ventura)
-      sha256 "07a592d12563e629476ffe4970d9b7daaec41c06e4b9661b0ca356f9cc61d3aa"
+      sha256 "cf1b81e15be32c9084881ba7066092ec35311dc95ac623c8c7db4528565304ac"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-14.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     end
@@ -46,7 +46,7 @@ cask "emacs-plus@31" do
   app "Emacs.app"
   app "Emacs Client.app"
 
-  # Remove quarantine attribute (app is not code signed)
+  # Remove quarantine attribute and apply custom icon
   postflight do
     system_command "/usr/bin/xattr",
                    args: ["-cr", "#{appdir}/Emacs.app"],
@@ -54,6 +54,19 @@ cask "emacs-plus@31" do
     system_command "/usr/bin/xattr",
                    args: ["-cr", "#{appdir}/Emacs Client.app"],
                    sudo: false
+
+    # Apply custom icon from ~/.config/emacs-plus/build.yml if configured
+    tap = Tap.fetch("d12frosted", "emacs-plus")
+    load "#{tap.path}/Library/IconApplier.rb"
+    if IconApplier.apply("#{appdir}/Emacs.app", "#{appdir}/Emacs Client.app")
+      # Re-sign after icon change
+      system_command "/usr/bin/codesign",
+                     args: ["--force", "--deep", "--sign", "-", "#{appdir}/Emacs.app"],
+                     sudo: false
+      system_command "/usr/bin/codesign",
+                     args: ["--force", "--deep", "--sign", "-", "#{appdir}/Emacs Client.app"],
+                     sudo: false
+    end
   end
 
   # Symlink binaries
@@ -61,7 +74,6 @@ cask "emacs-plus@31" do
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/emacsclient"
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/ebrowse"
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/etags"
-  binary "#{appdir}/Emacs.app/Contents/MacOS/bin/ctags", target: "emacs-ctags"
 
   # Man pages (not gzipped in the build)
   manpage "#{appdir}/Emacs.app/Contents/Resources/man/man1/emacs.1"
@@ -83,6 +95,12 @@ cask "emacs-plus@31" do
     This is a pre-built binary from the Emacs master branch.
     For custom patches or build options, use the formula instead:
       brew install emacs-plus@31 --with-...
+
+    Custom icons can be configured via ~/.config/emacs-plus/build.yml:
+      icon: dragon-plus
+
+    To re-apply an icon after changing build.yml:
+      brew reinstall --cask emacs-plus@31
 
     Note: Emacs Client.app requires Emacs to be running as a daemon.
     Add to your Emacs config: (server-start)

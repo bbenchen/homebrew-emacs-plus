@@ -92,6 +92,7 @@ class EmacsPlusAT31 < EmacsBase
   #
 
   opoo "The option --with-no-frame-refocus is not required anymore in emacs-plus@31." if build.with? "no-frame-refocus"
+  opoo "The option --with-imagemagick is deprecated and will be removed in a future version. Modern Emacs has native support for most image formats (SVG via librsvg, WebP, PNG, JPEG, GIF). If you rely on ImageMagick, please open an issue describing your use case." if build.with? "imagemagick"
   local_patch "system-appearance", sha: "53283503db5ed2887e9d733baaaf80f2c810e668e782e988bda5855a0b1ebeb4"
   local_patch "round-undecorated-frame", sha: "26947b6724fc29fadd44889808c5cf0b4ce6278cf04f46086a21df50c8c4151d"
   local_patch "mac-font-use-typo-metrics", sha: "318395d3869d3479da4593360bcb11a5df08b494b995287074d0d744ec562c17"
@@ -124,20 +125,27 @@ class EmacsPlusAT31 < EmacsBase
 
     args << "--without-compress-install" if build.without? "compress-install"
 
-    ENV.append "CFLAGS", "-g -Og" if build.with? "debug"
-    ENV.append "CFLAGS", "-O2 -DFD_SETSIZE=10000 -DDARWIN_UNLIMITED_SELECT"
-
-    ENV.append "CFLAGS", "-I#{Formula["sqlite"].include}"
-    ENV.append "LDFLAGS", "-L#{Formula["sqlite"].opt_lib}"
-
     # Necessary for libgccjit library discovery
     gcc_ver = Formula["gcc"].any_installed_version
     gcc_ver_major = gcc_ver.major
     gcc_lib="#{HOMEBREW_PREFIX}/lib/gcc/#{gcc_ver_major}"
 
-    ENV.append "CFLAGS", "-I#{Formula["gcc"].include}"
-    ENV.append "CFLAGS", "-I#{Formula["libgccjit"].include}"
+    # Enable debug symbols in Homebrew's superenv
+    if build.with? "debug"
+      ENV.set_debug_symbols
+    end
 
+    # Build CFLAGS - pass to configure for includes and defines
+    # Note: Homebrew's superenv handles optimization (-O2) and debug (-g) flags
+    cflags = []
+    cflags << "-DFD_SETSIZE=10000"
+    cflags << "-DDARWIN_UNLIMITED_SELECT"
+    cflags << "-I#{Formula["sqlite"].include}"
+    cflags << "-I#{Formula["gcc"].include}"
+    cflags << "-I#{Formula["libgccjit"].include}"
+    args << "CFLAGS=#{cflags.join(" ")}"
+
+    ENV.append "LDFLAGS", "-L#{Formula["sqlite"].opt_lib}"
     ENV.append "LDFLAGS", "-L#{gcc_lib}"
     ENV.append "LDFLAGS", "-Wl,-rpath,#{gcc_lib}"
 
@@ -195,6 +203,12 @@ class EmacsPlusAT31 < EmacsBase
 
       system "gmake"
 
+      # Generate dSYM bundle for debugging BEFORE install (clang stores symbols
+      # in .o files, and dsymutil needs them to extract debug info)
+      if build.with? "debug"
+        system "dsymutil", "nextstep/Emacs.app/Contents/MacOS/Emacs"
+      end
+
       system "gmake", "install"
 
       icons_dir = buildpath/"nextstep/Emacs.app/Contents/Resources"
@@ -220,8 +234,19 @@ class EmacsPlusAT31 < EmacsBase
       (prefix/"Emacs.app/Contents").install "native-lisp"
       prefix.install "nextstep/Emacs Client.app"
 
+      # inject Emacs Plus site-lisp with ns-emacs-plus-version
+      inject_emacs_plus_site_lisp(31)
+
       # inject PATH to Info.plist
       inject_path
+
+      # Rename dSYM to match the binary name (Emacs-real) so lldb auto-finds it
+      if build.with? "debug"
+        dsym_path = prefix/"Emacs.app/Contents/MacOS/Emacs.dSYM"
+        if dsym_path.exist?
+          mv dsym_path, prefix/"Emacs.app/Contents/MacOS/Emacs-real.dSYM"
+        end
+      end
 
       # inject description for protected resources usage
       inject_protected_resources_usage_desc
@@ -269,21 +294,36 @@ class EmacsPlusAT31 < EmacsBase
       end
 
       system "gmake"
+
+      # Generate dSYM bundle for debugging BEFORE install (non-Cocoa build)
+      if build.with? "debug"
+        system "dsymutil", "src/emacs"
+      end
+
       system "gmake", "install"
     end
   end
 
   def post_install
     emacs_info_dir = info/"emacs"
-    Dir.glob(emacs_info_dir/"*.info") do |info_filename|
+    Dir.glob(emacs_info_dir/"*.info{,.gz}") do |info_filename|
       system "install-info", "--info-dir=#{emacs_info_dir}", info_filename
     end
+
+    # Re-apply icon from build.yml (allows quick testing via `brew postinstall`)
+    apply_icon_post_install
 
     # Re-sign the app for macOS Sequoia compatibility (issue #742)
     app_path = prefix/"Emacs.app"
     if app_path.exist?
       ohai "Re-signing Emacs.app for macOS compatibility..."
       system "codesign", "--force", "--deep", "--sign", "-", app_path.to_s
+    end
+
+    # Also re-sign Emacs Client.app
+    client_path = prefix/"Emacs Client.app"
+    if client_path.exist?
+      system "codesign", "--force", "--deep", "--sign", "-", client_path.to_s
     end
   end
 
