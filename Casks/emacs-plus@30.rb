@@ -1,29 +1,29 @@
 cask "emacs-plus@30" do
   # Version format: <emacs-version>-<build-number>
   # Build number corresponds to GitHub Actions run number
-  version "30.2.50-28"
+  version "30.2.50-32"
 
   # Base URL for release assets (versioned releases: cask-30-<build>)
   base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-30-#{version.sub(/^[\d.]+-/, "")}"
   emacs_ver = version.sub(/-\d+$/, "")
 
   on_intel do
-    sha256 "66c365f8be1837b6cecc1fb5caa298b9a8a808bc49399a65770fae172d738d38"
+    sha256 "cc2773cd1614a40ef30c0decc0ce407914c5bee9506657107c5ffd77d4a5b8c7"
     url "#{base_url}/emacs-plus-#{emacs_ver}-x86_64-15.zip",
         verified: "github.com/d12frosted/homebrew-emacs-plus"
   end
 
   on_arm do
     if MacOS.version >= :tahoe # macOS 26
-      sha256 "b700f18b2dee6c41e51a6017e0bc1bcda78acf68cc716fc435dfcb8c907082d0"
+      sha256 "f63ad139fda34a8f4ad4c39500789df4277a87a7489068f62b13621b432ddd85"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     elsif MacOS.version >= :sequoia # macOS 15
-      sha256 "604826c67d4a07b98208f3306e7475501cf5100c868c038bac9f4f3886f4af42"
+      sha256 "2f99d4e089117756d9abf8ec2dbef0bb869235fa0c5b031f7bfb7d9966a2a80c"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     else # macOS 14 (Sonoma) and 13 (Ventura)
-      sha256 "1ec5b068d13cf4eaf5303f4cdd82670ab5eaf478060496df2fda18cce32c91ff"
+      sha256 "59d3af5457abb9315a88e25b4b69f47beb75e72d2bd72c022813894f37cc6761"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-14.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     end
@@ -32,6 +32,12 @@ cask "emacs-plus@30" do
   name "Emacs+"
   desc "GNU Emacs text editor with patches for macOS"
   homepage "https://github.com/d12frosted/homebrew-emacs-plus"
+
+  # Required for native compilation (JIT) at runtime
+  # - libgccjit: JIT compilation library
+  # - gcc: provides toolchain and libemutls_w.a runtime library
+  depends_on formula: "libgccjit"
+  depends_on formula: "gcc"
 
   # Conflict with other Emacs cask installations
   conflicts_with cask: [
@@ -46,7 +52,7 @@ cask "emacs-plus@30" do
   app "Emacs.app"
   app "Emacs Client.app"
 
-  # Remove quarantine attribute and apply custom icon
+  # Remove quarantine attribute, inject PATH, and apply custom icon
   postflight do
     system_command "/usr/bin/xattr",
                    args: ["-cr", "#{appdir}/Emacs.app"],
@@ -55,11 +61,17 @@ cask "emacs-plus@30" do
                    args: ["-cr", "#{appdir}/Emacs Client.app"],
                    sudo: false
 
-    # Apply custom icon from ~/.config/emacs-plus/build.yml if configured
+    # Environment setup for native compilation and CLI usage
     tap = Tap.fetch("d12frosted", "emacs-plus")
+    load "#{tap.path}/Library/CaskEnv.rb"
+    needs_resign = CaskEnv.inject("#{appdir}/Emacs.app", "#{appdir}/Emacs Client.app")
+
+    # Apply custom icon from ~/.config/emacs-plus/build.yml if configured
     load "#{tap.path}/Library/IconApplier.rb"
-    if IconApplier.apply("#{appdir}/Emacs.app", "#{appdir}/Emacs Client.app")
-      # Re-sign after icon change
+    needs_resign = IconApplier.apply("#{appdir}/Emacs.app", "#{appdir}/Emacs Client.app") || needs_resign
+
+    if needs_resign
+      # Re-sign after modifications
       system_command "/usr/bin/codesign",
                      args: ["--force", "--deep", "--sign", "-", "#{appdir}/Emacs.app"],
                      sudo: false
@@ -67,10 +79,24 @@ cask "emacs-plus@30" do
                      args: ["--force", "--deep", "--sign", "-", "#{appdir}/Emacs Client.app"],
                      sudo: false
     end
+
+    # Create emacs symlink manually (can't use binary stanza since wrapper is created above)
+    emacs_wrapper = "#{appdir}/Emacs.app/Contents/MacOS/bin/emacs"
+    emacs_symlink = "#{HOMEBREW_PREFIX}/bin/emacs"
+    if File.exist?(emacs_wrapper) && !File.exist?(emacs_symlink)
+      FileUtils.ln_sf(emacs_wrapper, emacs_symlink)
+    end
   end
 
-  # Symlink binaries
-  binary "#{appdir}/Emacs.app/Contents/MacOS/Emacs", target: "emacs"
+  # Clean up emacs symlink on uninstall (since we create it manually in postflight)
+  uninstall_postflight do
+    emacs_symlink = "#{HOMEBREW_PREFIX}/bin/emacs"
+    FileUtils.rm_f(emacs_symlink) if File.symlink?(emacs_symlink)
+  end
+
+  # Symlink binaries (emacs symlink created in postflight after wrapper is generated)
+  # Note: emacs is symlinked manually in postflight because the wrapper script
+  # is created there and binary stanzas run before postflight
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/emacsclient"
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/ebrowse"
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/etags"
