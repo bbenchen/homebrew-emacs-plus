@@ -18,7 +18,6 @@ class EmacsPlusAT31 < EmacsBase
   option "with-x11", "Experimental: build with x11 support"
   option "with-debug", "Build with debug symbols and debugger friendly optimizations"
   option "with-xwidgets", "Experimental: build with xwidgets support"
-  option "with-no-frame-refocus", "Disables frame re-focus (ie. closing one frame does not refocus another one)"
   option "with-compress-install", "Build with compressed install optimization"
 
   #
@@ -82,16 +81,9 @@ class EmacsPlusAT31 < EmacsBase
   end
 
   #
-  # Icons
-  #
-
-  inject_icon_options
-
-  #
   # Patches
   #
 
-  opoo "The option --with-no-frame-refocus is not required anymore in emacs-plus@31." if build.with? "no-frame-refocus"
   opoo "The option --with-imagemagick is deprecated and will be removed in a future version. Modern Emacs has native support for most image formats (SVG via librsvg, WebP, PNG, JPEG, GIF). If you rely on ImageMagick, please open an issue describing your use case." if build.with? "imagemagick"
   local_patch "system-appearance", sha: "53283503db5ed2887e9d733baaaf80f2c810e668e782e988bda5855a0b1ebeb4"
   local_patch "round-undecorated-frame", sha: "26947b6724fc29fadd44889808c5cf0b4ce6278cf04f46086a21df50c8c4151d"
@@ -101,8 +93,6 @@ class EmacsPlusAT31 < EmacsBase
   #
 
   def install
-    # Check for deprecated --with-*-icon options and auto-migrate
-    check_deprecated_icon_option
     # Check icon options are not used with non-Cocoa builds
     check_icon_compatibility
     # Warn if revision is pinned via config or environment variable
@@ -211,19 +201,9 @@ class EmacsPlusAT31 < EmacsBase
       system "gmake", "install"
 
       icons_dir = buildpath/"nextstep/Emacs.app/Contents/Resources"
-      ICONS_CONFIG.each_key do |icon|
-        next if build.without? "#{icon}-icon"
 
-        rm "#{icons_dir}/Emacs.icns"
-        resource("#{icon}-icon").stage do
-          icons_dir.install Dir["*.icns*"].first => "Emacs.icns"
-        end
-      end
-
-      # Apply custom icon from build.yml (if no deprecated --with-*-icon option used)
-      unless ICONS_CONFIG.keys.any? { |icon| build.with? "#{icon}-icon" }
-        apply_custom_icon(icons_dir)
-      end
+      # Apply custom icon from build.yml
+      apply_custom_icon(icons_dir)
 
       # Create Emacs Client.app (AppleScript-based to handle file opening from Finder)
       create_emacs_client_app(icons_dir)
