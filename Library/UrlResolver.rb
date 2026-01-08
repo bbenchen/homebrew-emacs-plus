@@ -1,5 +1,6 @@
-TAP_OWNER = "bbenchen"
-TAP_REPO = "emacs-plus"
+# Use defined? to avoid redefinition warnings when file is loaded multiple times
+TAP_OWNER = "bbenchen" unless defined?(TAP_OWNER)
+TAP_REPO = "emacs-plus" unless defined?(TAP_REPO)
 
 class UrlResolver
   def initialize(version, mode)
