@@ -79,12 +79,20 @@ class TestCaskEnv < Minitest::Test
 
   def test_native_comp_path_intel
     Hardware::CPU.mock_arm = false
-    path = CaskEnv.send(:native_comp_path)
+    # Clear HOMEBREW_PREFIX to test architecture-based fallback
+    original_env = ENV['HOMEBREW_PREFIX']
+    ENV.delete('HOMEBREW_PREFIX')
 
-    assert_includes path, "/usr/local/bin"
-    assert_includes path, "/usr/local/sbin"
-    assert_includes path, "/usr/bin"
-    refute_includes path, "/opt/homebrew"
+    begin
+      path = CaskEnv.send(:native_comp_path)
+
+      assert_includes path, "/usr/local/bin"
+      assert_includes path, "/usr/local/sbin"
+      assert_includes path, "/usr/bin"
+      refute_includes path, "/opt/homebrew"
+    ensure
+      ENV['HOMEBREW_PREFIX'] = original_env if original_env
+    end
   end
 
   def test_native_comp_path_order
@@ -98,6 +106,25 @@ class TestCaskEnv < Minitest::Test
     # System paths after
     assert_equal "/usr/bin", parts[2]
     assert_equal "/bin", parts[3]
+  end
+
+  def test_homebrew_prefix_uses_env_when_available
+    # Save and set environment variable
+    original_env = ENV['HOMEBREW_PREFIX']
+    ENV['HOMEBREW_PREFIX'] = '/custom/homebrew'
+
+    begin
+      # Since HOMEBREW_PREFIX constant won't be defined in test context,
+      # it should fall back to the environment variable
+      prefix = CaskEnv.send(:homebrew_prefix)
+      assert_equal '/custom/homebrew', prefix
+    ensure
+      if original_env
+        ENV['HOMEBREW_PREFIX'] = original_env
+      else
+        ENV.delete('HOMEBREW_PREFIX')
+      end
+    end
   end
 
   # ===========================================
@@ -114,7 +141,7 @@ class TestCaskEnv < Minitest::Test
     assert_equal CaskEnv.send(:native_comp_path), path
   end
 
-  def test_build_path_with_inject_path_appends_user_path
+  def test_build_path_with_inject_path_preserves_user_path_first
     CaskEnv.instance_variable_set(:@config, { "inject_path" => true })
     Hardware::CPU.mock_arm = true
 
@@ -126,26 +153,27 @@ class TestCaskEnv < Minitest::Test
       path = CaskEnv.send(:build_path)
       parts = path.split(':')
 
-      # Native comp paths should come first
-      assert_equal "/opt/homebrew/bin", parts[0]
-      assert_equal "/opt/homebrew/sbin", parts[1]
+      # User paths should come first (preserving order)
+      assert_equal "/custom/bin", parts[0]
+      assert_equal "/another/path", parts[1]
+      assert_equal "/usr/bin", parts[2]
 
-      # User paths should be appended (excluding duplicates)
-      assert_includes path, "/custom/bin"
-      assert_includes path, "/another/path"
+      # Missing native comp paths should be appended
+      assert_includes path, "/opt/homebrew/bin"
+      assert_includes path, "/opt/homebrew/sbin"
 
-      # /usr/bin is already in native_comp_path, so should not be duplicated
+      # /usr/bin is in user path, so should not be duplicated
       assert_equal 1, parts.count("/usr/bin")
     ensure
       ENV['PATH'] = original_path
     end
   end
 
-  def test_build_path_native_comp_always_first
+  def test_build_path_user_path_comes_first
     CaskEnv.instance_variable_set(:@config, { "inject_path" => true })
     Hardware::CPU.mock_arm = true
 
-    # User PATH that might contain homebrew paths in different order
+    # User PATH that contains homebrew paths - user's ordering should be preserved
     original_path = ENV['PATH']
     ENV['PATH'] = "/custom/first:/opt/homebrew/bin:/custom/last"
 
@@ -153,17 +181,44 @@ class TestCaskEnv < Minitest::Test
       path = CaskEnv.send(:build_path)
       parts = path.split(':')
 
-      # Native comp paths must be first regardless of user PATH order
-      assert_equal "/opt/homebrew/bin", parts[0]
-      assert_equal "/opt/homebrew/sbin", parts[1]
-      assert_equal "/usr/bin", parts[2]
+      # User paths should come first, preserving their order
+      assert_equal "/custom/first", parts[0]
+      assert_equal "/opt/homebrew/bin", parts[1]
+      assert_equal "/custom/last", parts[2]
 
-      # User's custom paths should be appended after
-      custom_first_index = parts.index("/custom/first")
-      custom_last_index = parts.index("/custom/last")
+      # Missing native comp paths should be appended at the end
+      homebrew_sbin_index = parts.index("/opt/homebrew/sbin")
+      usr_bin_index = parts.index("/usr/bin")
 
-      assert custom_first_index > 5, "User paths should come after native comp paths"
-      assert custom_last_index > 5, "User paths should come after native comp paths"
+      assert homebrew_sbin_index > 2, "Missing native paths should come after user paths"
+      assert usr_bin_index > 2, "Missing native paths should come after user paths"
+    ensure
+      ENV['PATH'] = original_path
+    end
+  end
+
+  def test_build_path_preserves_user_path_ordering
+    CaskEnv.instance_variable_set(:@config, { "inject_path" => true })
+    Hardware::CPU.mock_arm = true
+
+    # User PATH with specific ordering that should be preserved
+    original_path = ENV['PATH']
+    ENV['PATH'] = "/usr/local/custom:/opt/homebrew/bin:/my/tools:/usr/bin"
+
+    begin
+      path = CaskEnv.send(:build_path)
+      parts = path.split(':')
+
+      # User's exact ordering should be preserved at the start
+      assert_equal "/usr/local/custom", parts[0]
+      assert_equal "/opt/homebrew/bin", parts[1]
+      assert_equal "/my/tools", parts[2]
+      assert_equal "/usr/bin", parts[3]
+
+      # Missing native paths appended (homebrew/sbin, bin, sbin are not in user PATH)
+      assert_includes path, "/opt/homebrew/sbin"
+      assert_includes path, "/bin"
+      assert_includes path, "/sbin"
     ensure
       ENV['PATH'] = original_path
     end
