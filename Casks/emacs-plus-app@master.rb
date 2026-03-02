@@ -1,29 +1,29 @@
 cask "emacs-plus-app@master" do
   # Version format: <emacs-version>-<build-number>
   # Build number corresponds to GitHub Actions run number
-  version "31.0.50-88"
+  version "31.0.50-109"
 
   # Base URL for release assets (versioned releases: cask-31-<build>)
   base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-31-#{version.sub(/^[\d.]+-/, "")}"
   emacs_ver = version.sub(/-\d+$/, "")
 
   on_intel do
-    sha256 "ed88ec1bf4ac6a2c056ac0734e1518583626c30d0d23150e1d44f7f2a0232118"
+    sha256 "c875178d2eaa9a8245f13d9b4973adf96231e643adfdfd50f700ba61b4eb5904"
     url "#{base_url}/emacs-plus-#{emacs_ver}-x86_64-15.zip",
         verified: "github.com/d12frosted/homebrew-emacs-plus"
   end
 
   on_arm do
     if MacOS.version >= :tahoe # macOS 26
-      sha256 "2bbd36d9007a1bc99da2609808bfa1b8ebf255fcb752ed4b0f6b79a625836245"
+      sha256 "1c5cae989021c24fe839e6761713477a58522dddf2e756d80d85bae1787e34e3"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     elsif MacOS.version >= :sequoia # macOS 15
-      sha256 "d600921c96199bbc8083c8560b906d11176e4d261fb19f46c00b6e6bdb960274"
+      sha256 "7be77243fd36efb7c883ababd5437d744799f9fb7617dbcc206da37424f79a64"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     else # macOS 14 (Sonoma) and 13 (Ventura)
-      sha256 "3e6c87771b13f6d98b7f0d09dc7c059e5b3e007347e1bb117271297e5900e6f0"
+      sha256 "3c305522792bd582d2cc34f92c99ddd72cf47bb8fa394842526d8e7097031b4c"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-14.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     end
@@ -54,10 +54,10 @@ cask "emacs-plus-app@master" do
   # Remove quarantine attribute, inject PATH, and apply custom icon
   postflight do
     system_command "/usr/bin/xattr",
-                   args: ["-cr", "#{appdir}/Emacs.app"],
+                   args: ["-r", "-d", "com.apple.quarantine", "#{appdir}/Emacs.app"],
                    sudo: false
     system_command "/usr/bin/xattr",
-                   args: ["-cr", "#{appdir}/Emacs Client.app"],
+                   args: ["-r", "-d", "com.apple.quarantine", "#{appdir}/Emacs Client.app"],
                    sudo: false
 
     # Environment setup for native compilation and CLI usage

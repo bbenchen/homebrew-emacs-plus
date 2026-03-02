@@ -87,7 +87,6 @@ jobs:
             "round-undecorated-frame"
             "mac-font-use-typo-metrics"
             "fix-macos-tahoe-scrolling"
-            "fix-ns-x-colors"
           )
           for patch_name in "${PATCHES[@]}"; do
             patch_file="../patches/emacs-$EMACS_VERSION/${patch_name}.patch"
@@ -402,7 +401,7 @@ jobs:
           echo "OS_MAJOR=$OS_MAJOR" >> $GITHUB_ENV
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: emacs-plus-${{ env.EMACS_FULL_VERSION }}-${{ env.MAC_ARCH }}-${{ env.OS_MAJOR }}
           path: |
@@ -785,7 +784,7 @@ jobs:
           echo "OS_MAJOR=$OS_MAJOR" >> $GITHUB_ENV
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: emacs-plus-${{ env.EMACS_FULL_VERSION }}-${{ env.MAC_ARCH }}-${{ env.OS_MAJOR }}
           path: |
@@ -803,7 +802,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download artifacts for Emacs 30
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           pattern: emacs-plus-30.*
@@ -903,7 +902,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download artifacts for Emacs 31
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           pattern: emacs-plus-31.*
