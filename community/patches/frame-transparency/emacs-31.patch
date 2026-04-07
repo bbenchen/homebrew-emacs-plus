@@ -1,8 +1,8 @@
 diff --git a/src/frame.c b/src/frame.c
-index 1594578c06d..9f95da7f0d8 100644
+index d0d02eaeb1f..9cf9359ea53 100644
 --- a/src/frame.c
 +++ b/src/frame.c
-@@ -1134,6 +1134,7 @@ make_frame (bool mini_p)
+@@ -1209,6 +1209,7 @@ make_frame (bool mini_p)
  #ifdef NS_IMPL_COCOA
    f->ns_appearance = ns_appearance_system_default;
    f->ns_transparent_titlebar = false;
@@ -10,7 +10,7 @@ index 1594578c06d..9f95da7f0d8 100644
  #endif
  #endif
    f->select_mini_window_flag = false;
-@@ -4743,6 +4744,8 @@ static const struct frame_parm_table frame_parms[] =
+@@ -4869,6 +4870,8 @@ static const struct frame_parm_table frame_parms[] =
  #ifdef NS_IMPL_COCOA
    {"ns-appearance",		SYMBOL_INDEX (Qns_appearance)},
    {"ns-transparent-titlebar",	SYMBOL_INDEX (Qns_transparent_titlebar)},
@@ -19,7 +19,7 @@ index 1594578c06d..9f95da7f0d8 100644
  #endif
  };
  
-@@ -7134,6 +7137,8 @@ syms_of_frame (void)
+@@ -7303,6 +7306,8 @@ syms_of_frame (void)
  #ifdef NS_IMPL_COCOA
    DEFSYM (Qns_appearance, "ns-appearance");
    DEFSYM (Qns_transparent_titlebar, "ns-transparent-titlebar");
@@ -29,10 +29,10 @@ index 1594578c06d..9f95da7f0d8 100644
  
    DEFSYM (Qalpha, "alpha");
 diff --git a/src/frame.h b/src/frame.h
-index 9db68775bf6..c3309300c2f 100644
+index 091b112e8b9..f918d1fdbd2 100644
 --- a/src/frame.h
 +++ b/src/frame.h
-@@ -726,6 +726,7 @@ struct frame
+@@ -736,6 +736,7 @@ struct frame
    /* NSAppearance theme used on this frame.  */
    enum ns_appearance_type ns_appearance;
    bool_bf ns_transparent_titlebar;
@@ -40,7 +40,7 @@ index 9db68775bf6..c3309300c2f 100644
  #endif
  
  #ifdef HAVE_TEXT_CONVERSION
-@@ -1247,6 +1248,7 @@ FRAME_PARENT_FRAME (struct frame *f)
+@@ -1257,6 +1258,7 @@ FRAME_PARENT_FRAME (struct frame *f)
  #ifdef NS_IMPL_COCOA
  #define FRAME_NS_APPEARANCE(f) ((f)->ns_appearance)
  #define FRAME_NS_TRANSPARENT_TITLEBAR(f) ((f)->ns_transparent_titlebar)
@@ -49,7 +49,7 @@ index 9db68775bf6..c3309300c2f 100644
  #else /* not HAVE_WINDOW_SYSTEM */
  #define FRAME_OVERRIDE_REDIRECT(f) ((void) (f), 0)
 diff --git a/src/macfont.m b/src/macfont.m
-index 2a0b9aa2554..87f173d9f27 100644
+index 84e3e0e8e21..049c03a9e1f 100644
 --- a/src/macfont.m
 +++ b/src/macfont.m
 @@ -2994,9 +2994,23 @@ So we use CTFontDescriptorCreateMatchingFontDescriptor (no
@@ -86,7 +86,7 @@ index 2a0b9aa2554..87f173d9f27 100644
          {
            if (face && (NS_FACE_BACKGROUND (face)
 diff --git a/src/nsfns.m b/src/nsfns.m
-index 5a2d5641938..e138b5deb1f 100644
+index ae8e6e30e66..ed15c230f5d 100644
 --- a/src/nsfns.m
 +++ b/src/nsfns.m
 @@ -295,7 +295,7 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
@@ -192,7 +192,7 @@ index 5a2d5641938..e138b5deb1f 100644
  #endif
  };
  
-@@ -1414,6 +1457,11 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
+@@ -1416,6 +1459,11 @@ Turn the input menu (an NSMenu) into a lisp list for tracking on lisp side.
    FRAME_NS_TRANSPARENT_TITLEBAR (f) = !NILP (tem) && !EQ (tem, Qunbound);
    store_frame_param (f, Qns_transparent_titlebar,
                       FRAME_NS_TRANSPARENT_TITLEBAR (f) ? Qt : Qnil);
@@ -205,7 +205,7 @@ index 5a2d5641938..e138b5deb1f 100644
  
    parent_frame = gui_display_get_arg (dpyinfo, parms, Qparent_frame, NULL, NULL,
 diff --git a/src/nsterm.h b/src/nsterm.h
-index d9d16ffabd3..cd0cba23a12 100644
+index 610ca4c4acc..df2d85ebacd 100644
 --- a/src/nsterm.h
 +++ b/src/nsterm.h
 @@ -1242,6 +1242,10 @@ extern void ns_set_appearance (struct frame *f, Lisp_Object new_value,
@@ -220,7 +220,7 @@ index d9d16ffabd3..cd0cba23a12 100644
  extern int ns_select (int nfds, fd_set *readfds, fd_set *writefds,
  		      fd_set *exceptfds, struct timespec *timeout,
 diff --git a/src/nsterm.m b/src/nsterm.m
-index 9468832b6d5..62c492660f0 100644
+index b16d020ebad..360c13747ed 100644
 --- a/src/nsterm.m
 +++ b/src/nsterm.m
 @@ -31,6 +31,7 @@ Updated by Christian Limpach (chris@nice.ch)
@@ -231,10 +231,10 @@ index 9468832b6d5..62c492660f0 100644
  #include <math.h>
  #include <pthread.h>
  #include <sys/types.h>
-@@ -71,6 +72,10 @@ Updated by Christian Limpach (chris@nice.ch)
- #include "macfont.h"
- #include <Carbon/Carbon.h>
- #include <IOSurface/IOSurface.h>
+@@ -77,6 +78,10 @@ UAZoomEnabled and UAZoomChangeFocus (UniversalAccess framework).
+    but the explicit import makes the dependency visible and guards
+    against SDK changes.  */
+ #import <ApplicationServices/ApplicationServices.h>
 +extern int CGSSetWindowBackgroundBlurRadius (int connection,
 +                                             int windowNumber,
 +                                             int radius);
@@ -242,7 +242,7 @@ index 9468832b6d5..62c492660f0 100644
  #endif
  
  static EmacsMenu *dockMenu;
-@@ -1536,6 +1541,9 @@ -(void)remove
+@@ -1665,6 +1670,9 @@ -(void)remove
            ns_set_offset(f, f->left_pos, f->top_pos, 0);
          }
      }
@@ -252,7 +252,7 @@ index 9468832b6d5..62c492660f0 100644
  }
  
  
-@@ -2028,6 +2036,76 @@ Hide the window (X11 semantics)
+@@ -2157,6 +2165,76 @@ Hide the window (X11 semantics)
      }
  #endif /* MAC_OS_X_VERSION_MAX_ALLOWED >= 101000 */
  }
@@ -329,7 +329,7 @@ index 9468832b6d5..62c492660f0 100644
  #endif /* NS_IMPL_COCOA */
  
  static void
-@@ -2673,8 +2751,14 @@ Hide the window (X11 semantics)
+@@ -2802,8 +2880,14 @@ Hide the window (X11 semantics)
  
    block_input ();
    ns_focus (f, &r, 1);
@@ -346,7 +346,7 @@ index 9468832b6d5..62c492660f0 100644
    NSRectFill (r);
    ns_unfocus (f);
  
-@@ -2702,7 +2786,13 @@ Hide the window (X11 semantics)
+@@ -2831,7 +2915,13 @@ Hide the window (X11 semantics)
  
    r = NSIntersectionRect (r, [view frame]);
    ns_focus (f, &r, 1);
@@ -361,7 +361,7 @@ index 9468832b6d5..62c492660f0 100644
  
    NSRectFill (r);
  
-@@ -2806,7 +2896,13 @@ Hide the window (X11 semantics)
+@@ -2935,7 +3025,13 @@ Hide the window (X11 semantics)
          return;
  
        ns_focus (f, NULL, 1);
@@ -376,7 +376,7 @@ index 9468832b6d5..62c492660f0 100644
        NSRectFill (NSMakeRect (0, margin, width, border));
        NSRectFill (NSMakeRect (0, 0, border, height));
        NSRectFill (NSMakeRect (0, margin, width, border));
-@@ -2858,7 +2954,13 @@ Hide the window (X11 semantics)
+@@ -2987,7 +3083,13 @@ Hide the window (X11 semantics)
            NSRect r = NSMakeRect (0, y, FRAME_PIXEL_WIDTH (f), height);
            ns_focus (f, &r, 1);
  
@@ -391,7 +391,7 @@ index 9468832b6d5..62c492660f0 100644
            NSRectFill (NSMakeRect (0, y, width, height));
            NSRectFill (NSMakeRect (FRAME_PIXEL_WIDTH (f) - width,
                                    y, width, height));
-@@ -3109,7 +3211,12 @@ Hide the window (X11 semantics)
+@@ -3238,7 +3340,12 @@ Hide the window (X11 semantics)
      {
        NSTRACE_RECT ("clearRect", bmpRect);
  
@@ -405,7 +405,7 @@ index 9468832b6d5..62c492660f0 100644
        NSRectFill (bmpRect);
      }
  
-@@ -3140,6 +3247,8 @@ Hide the window (X11 semantics)
+@@ -3269,6 +3376,8 @@ Hide the window (X11 semantics)
        else
          bm_color = f->output_data.ns->cursor_color;
  
@@ -414,7 +414,7 @@ index 9468832b6d5..62c492660f0 100644
        [bm_color set];
        [bmp fill];
  
-@@ -3686,6 +3795,30 @@ larger if there are taller display elements (e.g., characters
+@@ -3825,6 +3934,30 @@ larger if there are taller display elements (e.g., characters
      }
  }
  
@@ -445,7 +445,7 @@ index 9468832b6d5..62c492660f0 100644
  /* Set up colors for the relief lines around glyph string S.  */
  
  static void
-@@ -3705,6 +3838,10 @@ larger if there are taller display elements (e.g., characters
+@@ -3844,6 +3977,10 @@ larger if there are taller display elements (e.g., characters
    if (color == nil)
      color = [NSColor grayColor];
  
@@ -456,7 +456,7 @@ index 9468832b6d5..62c492660f0 100644
    if (color != di->relief_background_color)
      {
        [di->relief_background_color release];
-@@ -3924,8 +4061,11 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4063,8 +4200,11 @@ Function modeled after x_draw_glyph_string_box ().
    /* TODO: Sometimes box_color is 0 and this seems wrong; should investigate.  */
    if (s->face->box == FACE_SIMPLE_BOX && s->face->box_color)
      {
@@ -469,7 +469,7 @@ index 9468832b6d5..62c492660f0 100644
                     left_p, right_p);
      }
    else
-@@ -3958,7 +4098,13 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4097,7 +4237,13 @@ Function modeled after x_draw_glyph_string_box ().
  #ifdef NS_IMPL_COCOA
  	  /* On cocoa emacs the stipple is stored as a mask CGImage.
  	     First we want to clear the background with the bg color.  */
@@ -484,7 +484,7 @@ index 9468832b6d5..62c492660f0 100644
  	  r = NSMakeRect (s->x, s->y + box_line_width,
  			  s->background_width,
  			  s->height - 2 * box_line_width);
-@@ -4002,9 +4148,15 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4141,9 +4287,15 @@ Function modeled after x_draw_glyph_string_box ().
  	       || force_p)
  	{
  	  if (s->hl != DRAW_CURSOR)
@@ -503,7 +503,7 @@ index 9468832b6d5..62c492660f0 100644
  	  else if (face && (NS_FACE_BACKGROUND (face)
  			    == [(NSColor *) FRAME_CURSOR_COLOR (s->f)
  					    unsignedLong]))
-@@ -4144,7 +4296,13 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4283,7 +4435,13 @@ Function modeled after x_draw_glyph_string_box ().
       otherwise, since we composite the image under NS (instead of mucking
       with its background color), we must clear just the image area.  */
  
@@ -518,7 +518,7 @@ index 9468832b6d5..62c492660f0 100644
  
    if (bg_height > s->slice.height || s->img->hmargin || s->img->vmargin
        || s->img->mask || s->img->pixmap == 0 || s->width != s->background_width)
-@@ -4215,6 +4373,8 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4354,6 +4512,8 @@ Function modeled after x_draw_glyph_string_box ().
      {
        [FRAME_CURSOR_COLOR (s->f) set];
        tdCol = [NSColor colorWithUnsignedLong: NS_FACE_BACKGROUND (face)];
@@ -527,7 +527,7 @@ index 9468832b6d5..62c492660f0 100644
      }
    else
      tdCol = [NSColor colorWithUnsignedLong: NS_FACE_FOREGROUND (face)];
-@@ -4307,10 +4467,24 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4446,10 +4606,24 @@ Function modeled after x_draw_glyph_string_box ().
  		face = FACE_FROM_ID (s->f, MOUSE_FACE_ID);
  	      prepare_face_for_display (s->f, face);
  
@@ -554,7 +554,7 @@ index 9468832b6d5..62c492660f0 100644
  	  NSRectFill (NSMakeRect (x, y, w, h));
  	}
      }
-@@ -4344,7 +4518,14 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4483,7 +4657,14 @@ Function modeled after x_draw_glyph_string_box ().
  	      /* On cocoa emacs the stipple is stored as a mask CGImage.
  		 First we want to clear the background with the bg
  		 color.  */
@@ -570,7 +570,7 @@ index 9468832b6d5..62c492660f0 100644
  	      NSRectFill (NSMakeRect (x, s->y, background_width, s->height));
  
  	      /* This part could possibly be improved, the author is
-@@ -4372,7 +4553,14 @@ Function modeled after x_draw_glyph_string_box ().
+@@ -4511,7 +4692,14 @@ Function modeled after x_draw_glyph_string_box ().
  #endif /* NS_IMPL_COCOA */
  	    }
  	  else
@@ -586,7 +586,7 @@ index 9468832b6d5..62c492660f0 100644
  
  	  NSRectFill (NSMakeRect (x, s->y, background_width, s->height));
  	}
-@@ -8860,8 +9048,9 @@ - (void)toggleFullScreen: (id)sender
+@@ -9053,8 +9241,9 @@ - (void)toggleFullScreen: (id)sender
          }
  
        [w setContentView:[fw contentView]];
@@ -598,7 +598,7 @@ index 9468832b6d5..62c492660f0 100644
          [w setOpaque: NO];
  
        f->border_width = [w borderWidth];
-@@ -9598,10 +9787,14 @@ - (instancetype) initWithEmacsFrame: (struct frame *) f
+@@ -9792,10 +9981,14 @@ - (instancetype) initWithEmacsFrame: (struct frame *) f
        f->border_width = [self borderWidth];
  
        col = [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND
@@ -616,7 +616,7 @@ index 9468832b6d5..62c492660f0 100644
  
        /* toolbar support */
        [self createToolbar:f];
-@@ -11315,6 +11508,16 @@ Convert an X font name (XLFD) to an NS font name.
+@@ -11509,6 +11702,16 @@ Convert an X font name (XLFD) to an NS font name.
    DEFSYM (Qns_drag_operation_link, "ns-drag-operation-link");
    DEFSYM (Qns_drag_operation_generic, "ns-drag-operation-generic");
    DEFSYM (Qns_handle_drag_motion, "ns-handle-drag-motion");
