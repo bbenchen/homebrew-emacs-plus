@@ -1,6 +1,6 @@
 require_relative "../Library/EmacsBase"
 
-class EmacsPlusAT31 < EmacsBase
+class EmacsPlusAT32 < EmacsBase
   init "32.0.50", branch: "master"
 
   desc "GNU Emacs text editor"
