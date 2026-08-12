@@ -1,36 +1,36 @@
-cask "emacs-plus-app" do
+cask "emacs-plus-app@next" do
   # Version format: <emacs-version>-<build-number>
   # Build number corresponds to GitHub Actions run number
-  version "30.2-292"
+  version "31.0.91-291"
 
-  # Base URL for release assets (versioned releases: cask-30-<build>)
-  base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-30-#{version.sub(/^[\d.]+-/, "")}"
+  # Base URL for release assets (versioned releases: cask-31-<build>)
+  base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-31-#{version.sub(/^[\d.]+-/, "")}"
   emacs_ver = version.sub(/-\d+$/, "")
 
   on_intel do
-    sha256 "6f0a64a7fc69eb5a168f73309fb207a1721567c0e2b945622a0a407ff02dd0ca"
+    sha256 "e76ef664e30b25a5a46f43a21d9c7214ddd429301f7b330ef57c172cc9281bf4"
     url "#{base_url}/emacs-plus-#{emacs_ver}-x86_64-15.zip",
         verified: "github.com/d12frosted/homebrew-emacs-plus"
   end
 
   on_arm do
     if MacOS.version >= :tahoe # macOS 26
-      sha256 "9b34b0ab81ea7dc9bba443a9e68770b0483ccd61819203a27d7577e940f3b262"
+      sha256 "cafbb16843818d350ef7e565a16fe76bda02874e2fa96d933868c5e5493d0418"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     elsif MacOS.version >= :sequoia # macOS 15
-      sha256 "c9ad55a06d715a691da01f2643ab29e904e9d401b55bd7bbe390e730695be649"
+      sha256 "c3c58b81e68a666a796e02983507f90bba11445ae8b421fbd0b41afc06220fb3"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     else # macOS 14 (Sonoma) and 13 (Ventura)
-      sha256 "3b5528e6c8dcfbcccd18a227a71398819a0fafef95ccb93987048d6ed7ffded1"
+      sha256 "09a7d0dfc9c73a0c31fc64bfb387112ab0f70fb37575a2d5b894533f7d1c2697"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-14.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     end
   end
 
-  name "Emacs+"
-  desc "GNU Emacs text editor with patches for macOS"
+  name "Emacs+ (Pre-release)"
+  desc "GNU Emacs text editor with patches for macOS (next stable release)"
   homepage "https://github.com/d12frosted/homebrew-emacs-plus"
 
   # Required for native compilation (JIT) at runtime
@@ -44,8 +44,8 @@ cask "emacs-plus-app" do
     "emacs",
     "emacs-mac",
     "emacs-mac-spacemacs-icon",
+    "emacs-plus-app",
     "emacs-plus-app@master",
-    "emacs-plus-app@next",
   ]
 
   # Install the app
@@ -73,10 +73,10 @@ cask "emacs-plus-app" do
   # Symlink binaries (emacs symlink created in postflight after wrapper is generated)
   # Note: emacs is symlinked manually in postflight because the wrapper script
   # is created there and binary stanzas run before postflight
+  # Note: no ctags symlink; the ctags program was removed in Emacs 31
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/emacsclient"
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/ebrowse"
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/etags"
-  binary "#{appdir}/Emacs.app/Contents/MacOS/bin/ctags", target: "emacs-ctags"
 
   # Man pages (not gzipped in the build)
   manpage "#{appdir}/Emacs.app/Contents/Resources/man/man1/emacs.1"
@@ -93,17 +93,19 @@ cask "emacs-plus-app" do
   ]
 
   caveats <<~EOS
-    Emacs+ has been installed to /Applications.
+    Emacs+ (pre-release) has been installed to /Applications.
 
-    This is a pre-built binary. For custom patches or build options,
-    use the formula instead:
-      brew install emacs-plus --with-...
+    This is a pre-built binary from the Emacs release branch (currently
+    Emacs 31, pretest). It tracks the next stable release: less bleeding
+    edge than @master, newer than the stable cask.
+    For custom patches or build options, use the formula instead:
+      brew install emacs-plus@31 --with-...
 
     Custom icons can be configured via ~/.config/emacs-plus/build.yml:
       icon: dragon-plus
 
     To re-apply an icon after changing build.yml:
-      brew reinstall --cask emacs-plus-app
+      brew reinstall --cask emacs-plus-app@next
 
     Note: Emacs Client.app requires Emacs to be running as a daemon.
     Add to your Emacs config: (server-start)
