@@ -1,7 +1,7 @@
 require_relative "../Library/EmacsBase"
 
 class EmacsPlusAT31 < EmacsBase
-  init "31.0.91", branch: "emacs-31"
+  init "31.1", branch: "emacs-31"
 
   desc "GNU Emacs text editor"
   homepage "https://www.gnu.org/software/emacs/"
@@ -74,6 +74,7 @@ class EmacsPlusAT31 < EmacsBase
   local_patch "fix-ns-x-colors", sha: "9e5d3e26a8d388d3a000b697d582769645ca93ad597b4113744deba4b89a8b9e"
   local_patch "system-appearance", sha: "53283503db5ed2887e9d733baaaf80f2c810e668e782e988bda5855a0b1ebeb4"
   local_patch "round-undecorated-frame", sha: "c9430a1ead81e313b3d2877ff6f8044fb29441eecc7cc42000515d7c8ec6380f"
+  local_patch "fix-ns-scroll-crash", sha: "3250bf6e45cdcb3f4cbc0ace2d2d3200464331cbfb34613980554e31ec45fe6c"
 
   #
   # Install
