@@ -1,29 +1,29 @@
 cask "emacs-plus-app@master" do
   # Version format: <emacs-version>-<build-number>
   # Build number corresponds to GitHub Actions run number
-  version "32.0.50-308"
+  version "32.0.50-311"
 
   # Base URL for release assets (lane releases: cask-master-<build>)
   base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-master-#{version.sub(/^[\d.]+-/, "")}"
   emacs_ver = version.sub(/-\d+$/, "")
 
   on_intel do
-    sha256 "3f2b7eb168768470fd32c2b1d5c29ce30514106313be5ca47b41e6407b346bf5"
+    sha256 "ef77bcad745ec3f45f4f555625cd021eba46bf33f4737998b3a6d52bb53b55eb"
     url "#{base_url}/emacs-plus-#{emacs_ver}-x86_64-15.zip",
         verified: "github.com/d12frosted/homebrew-emacs-plus"
   end
 
   on_arm do
     if MacOS.version >= :tahoe # macOS 26
-      sha256 "cad6a84e84cfd10bf705445a221acca236da49eb1bd5329399a7c99ef796c088"
+      sha256 "ca280e73d2c5d1941b0249e3b10b6c81c1682fa2a959e284010ccfe3aa1aa820"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     elsif MacOS.version >= :sequoia # macOS 15
-      sha256 "31432300f6895ad7989158a1ed87a3d645cfda9b05968e32e4dd18db83a5bca7"
+      sha256 "ec9ceea58fcd5957c71106bfaab0fd6399e58b1c94f0df501be2e5efa0bb3e9c"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     else # macOS 14 (Sonoma) and 13 (Ventura)
-      sha256 "a99a6216de8cc8689d81be30bef070452d14f1c84d2f494f576f9c06f73e4d43"
+      sha256 "29ad53a8c35d101f25e646f447948cfa6e0dc5613168a0da561f085787839cc5"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-14.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     end
@@ -65,9 +65,14 @@ cask "emacs-plus-app@master" do
   end
 
   # Clean up emacs symlink on uninstall (since we create it manually in postflight)
+  # Only remove it when it points into this cask's Emacs.app: the formulas
+  # link bin/emacs too, and that symlink is not ours to delete
   uninstall_postflight do
     emacs_symlink = "#{HOMEBREW_PREFIX}/bin/emacs"
-    FileUtils.rm_f(emacs_symlink) if File.symlink?(emacs_symlink)
+    if File.symlink?(emacs_symlink) &&
+       File.readlink(emacs_symlink).start_with?("#{appdir}/Emacs.app/")
+      FileUtils.rm_f(emacs_symlink)
+    end
   end
 
   # Symlink binaries (emacs symlink created in postflight after wrapper is generated)
@@ -88,7 +93,6 @@ cask "emacs-plus-app@master" do
     "~/Library/Caches/org.gnu.Emacs",
     "~/Library/Preferences/org.gnu.Emacs.plist",
     "~/Library/Saved Application State/org.gnu.Emacs.savedState",
-    "~/.emacs.d",
   ]
 
   caveats <<~EOS
