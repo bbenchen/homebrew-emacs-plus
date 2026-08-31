@@ -59,10 +59,8 @@ class EmacsPlusAT32 < EmacsBase
   # Incompatible options
   #
 
-  if build.with? "xwidgets"
-    unless (build.with? "cocoa") && (build.without? "x11")
-      odie "--with-xwidgets is not available when building --with-x11"
-    end
+  if build.with?("xwidgets") && !((build.with? "cocoa") && (build.without? "x11"))
+    odie "--with-xwidgets is not available when building --with-x11"
   end
 
   #
@@ -106,9 +104,7 @@ class EmacsPlusAT32 < EmacsBase
     gcc_lib="#{HOMEBREW_PREFIX}/lib/gcc/#{gcc_ver_major}"
 
     # Enable debug symbols in Homebrew's superenv
-    if build.with? "debug"
-      ENV.set_debug_symbols
-    end
+    ENV.set_debug_symbols if build.with? "debug"
 
     # Build CFLAGS - pass to configure for includes and defines
     # Note: Homebrew's superenv handles optimization (-O2) and debug (-g) flags
@@ -120,7 +116,7 @@ class EmacsPlusAT32 < EmacsBase
     cflags << "-I#{Formula["libgccjit"].include}"
     args << "CFLAGS=#{cflags.join(" ")}"
 
-    ENV.append "LDFLAGS", "-L#{Formula["sqlite"].opt_lib}"
+    ENV.append "LDFLAGS", "-L#{Utils::Path.formula_opt_lib("sqlite")}"
     ENV.append "LDFLAGS", "-L#{gcc_lib}"
     ENV.append "LDFLAGS", "-Wl,-rpath,#{gcc_lib}"
 
@@ -157,18 +153,14 @@ class EmacsPlusAT32 < EmacsBase
                                    .gsub("#define HAVE_DECL_ALIGNED_ALLOC 1", "#undef HAVE_DECL_ALIGNED_ALLOC")
                                    .gsub("#define HAVE_ALLOCA 1", "#undef HAVE_ALLOCA")
                                    .gsub("#define HAVE_ALLOCA_H 1", "#undef HAVE_ALLOCA_H")
-        File.open("src/config.h", "w") do |f|
-          f.write(configure_h_filtered)
-        end
+        File.write("src/config.h", configure_h_filtered)
       end
 
       system "gmake"
 
       # Generate dSYM bundle for debugging BEFORE install (clang stores symbols
       # in .o files, and dsymutil needs them to extract debug info)
-      if build.with? "debug"
-        system "dsymutil", "nextstep/Emacs.app/Contents/MacOS/Emacs"
-      end
+      system "dsymutil", "nextstep/Emacs.app/Contents/MacOS/Emacs" if build.with? "debug"
 
       system "gmake", "install"
 
@@ -234,17 +226,13 @@ class EmacsPlusAT32 < EmacsBase
                                    .gsub("#define HAVE_DECL_ALIGNED_ALLOC 1", "#undef HAVE_DECL_ALIGNED_ALLOC")
                                    .gsub("#define HAVE_ALLOCA 1", "#undef HAVE_ALLOCA")
                                    .gsub("#define HAVE_ALLOCA_H 1", "#undef HAVE_ALLOCA_H")
-        File.open("src/config.h", "w") do |f|
-          f.write(configure_h_filtered)
-        end
+        File.write("src/config.h", configure_h_filtered)
       end
 
       system "gmake"
 
       # Generate dSYM bundle for debugging BEFORE install (non-Cocoa build)
-      if build.with? "debug"
-        system "dsymutil", "src/emacs"
-      end
+      system "dsymutil", "src/emacs" if build.with? "debug"
 
       system "gmake", "install"
     end
@@ -268,9 +256,7 @@ class EmacsPlusAT32 < EmacsBase
 
     # Also re-sign Emacs Client.app
     client_path = prefix/"Emacs Client.app"
-    if client_path.exist?
-      system "codesign", "--force", "--deep", "--sign", "-", client_path.to_s
-    end
+    system "codesign", "--force", "--deep", "--sign", "-", client_path.to_s if client_path.exist?
   end
 
   def caveats
@@ -295,6 +281,11 @@ class EmacsPlusAT32 < EmacsBase
       dependencies (e.g., tree-sitter, libgccjit), reinstall emacs-plus:
         brew reinstall emacs-plus@32
 
+      Note: installing this formula alongside an emacs-plus-app cask is not
+      supported. Both provide emacs and emacsclient in $(brew --prefix)/bin,
+      and Homebrew cannot declare a conflict between a formula and a cask.
+      Keep one or the other installed.
+
       Report any issues to https://github.com/d12frosted/homebrew-emacs-plus
     EOS
   end
@@ -302,8 +293,8 @@ class EmacsPlusAT32 < EmacsBase
   service do
     run [opt_bin/"emacs", "--fg-daemon"]
     keep_alive true
-    log_path "/tmp/homebrew.mxcl.emacs-plus.stdout.log"
-    error_log_path "/tmp/homebrew.mxcl.emacs-plus.stderr.log"
+    log_path var/"log/emacs-plus@32.stdout.log"
+    error_log_path var/"log/emacs-plus@32.stderr.log"
   end
 
   test do

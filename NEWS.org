@@ -5,7 +5,31 @@ This file documents notable changes to Emacs Plus.
 
 * 2026-08-27
 
+** Improvements
+
+*** =brew style= runs in CI
+
+The formulas and casks are now checked with =brew style= on every push and pull request, and all existing style offenses are fixed. Two cask cops are excluded (=Cask/NoOverrides= and =Cask/OnSystemConditionals=): they demand restructuring the casks into =on_{macos_version}= blocks, which does not fit how the casks pick one of several prebuilt binaries per macOS version. As part of the cleanup the casks now declare =depends_on :macos= and their descriptions no longer name the platform.
+
+*** Caveats warn about mixing formula and cask installs
+
+The =emacs-plus@N= formulas and the =emacs-plus-app= casks both provide =emacs= and =emacsclient= in =$(brew --prefix)/bin=, but Homebrew cannot declare a conflict between a formula and a cask, so nothing stops you from installing both and ending up with commands that do not match the app you launch. The caveats on both sides now say to keep one or the other.
+
+** Changes
+
+*** Service logs move from =/tmp= to =var/log=, one pair per version
+
+Every =emacs-plus@N= service wrote to the same =/tmp/homebrew.mxcl.emacs-plus.{stdout,stderr}.log=, so running two versions interleaved their output, and the logs vanished on reboot. Each formula now logs to =$(brew --prefix)/var/log/emacs-plus@N.{stdout,stderr}.log=. Restart the service after upgrading to pick up the new paths:
+
+#+begin_src bash
+  brew services restart emacs-plus@31
+#+end_src
+
 ** Bug Fixes
+
+*** Casks refuse to install on macOS versions their binaries cannot run on
+
+The prebuilt binaries have a minimum macOS baked in by the build runner: the oldest arm64 build targets macOS 14 (Sonoma) and the only Intel build targets macOS 15 (Sequoia). The casks happily installed on older systems (the arm64 fallback even claimed to cover Ventura), and the app then refused to launch. The casks now declare =depends_on macos:= per architecture, so unsupported systems get a clear error at install time. On older macOS, build from source with the formula instead.
 
 *** Formula =emacs= wrapper prefers its own =Emacs.app=
 

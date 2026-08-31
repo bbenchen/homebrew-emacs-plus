@@ -60,17 +60,19 @@ class EmacsPlusAT31 < EmacsBase
   # Incompatible options
   #
 
-  if build.with? "xwidgets"
-    unless (build.with? "cocoa") && (build.without? "x11")
-      odie "--with-xwidgets is not available when building --with-x11"
-    end
+  if build.with?("xwidgets") && !((build.with? "cocoa") && (build.without? "x11"))
+    odie "--with-xwidgets is not available when building --with-x11"
   end
 
   #
   # Patches
   #
 
-  opoo "The option --with-imagemagick is deprecated and will be removed in a future version. Modern Emacs has native support for most image formats (SVG via librsvg, WebP, PNG, JPEG, GIF). If you rely on ImageMagick, please open an issue describing your use case." if build.with? "imagemagick"
+  if build.with? "imagemagick"
+    opoo "The option --with-imagemagick is deprecated and will be removed in a future version. " \
+         "Modern Emacs has native support for most image formats (SVG via librsvg, WebP, PNG, JPEG, GIF). " \
+         "If you rely on ImageMagick, please open an issue describing your use case."
+  end
   local_patch "fix-ns-x-colors", sha: "9e5d3e26a8d388d3a000b697d582769645ca93ad597b4113744deba4b89a8b9e"
   local_patch "system-appearance", sha: "53283503db5ed2887e9d733baaaf80f2c810e668e782e988bda5855a0b1ebeb4"
   local_patch "round-undecorated-frame", sha: "c9430a1ead81e313b3d2877ff6f8044fb29441eecc7cc42000515d7c8ec6380f"
@@ -108,9 +110,7 @@ class EmacsPlusAT31 < EmacsBase
     gcc_lib="#{HOMEBREW_PREFIX}/lib/gcc/#{gcc_ver_major}"
 
     # Enable debug symbols in Homebrew's superenv
-    if build.with? "debug"
-      ENV.set_debug_symbols
-    end
+    ENV.set_debug_symbols if build.with? "debug"
 
     # Build CFLAGS - pass to configure for includes and defines
     # Note: Homebrew's superenv handles optimization (-O2) and debug (-g) flags
@@ -122,7 +122,7 @@ class EmacsPlusAT31 < EmacsBase
     cflags << "-I#{Formula["libgccjit"].include}"
     args << "CFLAGS=#{cflags.join(" ")}"
 
-    ENV.append "LDFLAGS", "-L#{Formula["sqlite"].opt_lib}"
+    ENV.append "LDFLAGS", "-L#{Utils::Path.formula_opt_lib("sqlite")}"
     ENV.append "LDFLAGS", "-L#{gcc_lib}"
     ENV.append "LDFLAGS", "-Wl,-rpath,#{gcc_lib}"
 
@@ -144,7 +144,7 @@ class EmacsPlusAT31 < EmacsBase
       end
 
     if build.with? "imagemagick"
-      imagemagick_lib_path = Formula["imagemagick"].opt_lib/"pkgconfig"
+      imagemagick_lib_path = Utils::Path.formula_opt_lib("imagemagick")/"pkgconfig"
       ohai "ImageMagick PKG_CONFIG_PATH: ", imagemagick_lib_path
       ENV.prepend_path "PKG_CONFIG_PATH", imagemagick_lib_path
     end
@@ -173,18 +173,14 @@ class EmacsPlusAT31 < EmacsBase
                                    .gsub("#define HAVE_DECL_ALIGNED_ALLOC 1", "#undef HAVE_DECL_ALIGNED_ALLOC")
                                    .gsub("#define HAVE_ALLOCA 1", "#undef HAVE_ALLOCA")
                                    .gsub("#define HAVE_ALLOCA_H 1", "#undef HAVE_ALLOCA_H")
-        File.open("src/config.h", "w") do |f|
-          f.write(configure_h_filtered)
-        end
+        File.write("src/config.h", configure_h_filtered)
       end
 
       system "gmake"
 
       # Generate dSYM bundle for debugging BEFORE install (clang stores symbols
       # in .o files, and dsymutil needs them to extract debug info)
-      if build.with? "debug"
-        system "dsymutil", "nextstep/Emacs.app/Contents/MacOS/Emacs"
-      end
+      system "dsymutil", "nextstep/Emacs.app/Contents/MacOS/Emacs" if build.with? "debug"
 
       system "gmake", "install"
 
@@ -250,17 +246,13 @@ class EmacsPlusAT31 < EmacsBase
                                    .gsub("#define HAVE_DECL_ALIGNED_ALLOC 1", "#undef HAVE_DECL_ALIGNED_ALLOC")
                                    .gsub("#define HAVE_ALLOCA 1", "#undef HAVE_ALLOCA")
                                    .gsub("#define HAVE_ALLOCA_H 1", "#undef HAVE_ALLOCA_H")
-        File.open("src/config.h", "w") do |f|
-          f.write(configure_h_filtered)
-        end
+        File.write("src/config.h", configure_h_filtered)
       end
 
       system "gmake"
 
       # Generate dSYM bundle for debugging BEFORE install (non-Cocoa build)
-      if build.with? "debug"
-        system "dsymutil", "src/emacs"
-      end
+      system "dsymutil", "src/emacs" if build.with? "debug"
 
       system "gmake", "install"
     end
@@ -284,9 +276,7 @@ class EmacsPlusAT31 < EmacsBase
 
     # Also re-sign Emacs Client.app
     client_path = prefix/"Emacs Client.app"
-    if client_path.exist?
-      system "codesign", "--force", "--deep", "--sign", "-", client_path.to_s
-    end
+    system "codesign", "--force", "--deep", "--sign", "-", client_path.to_s if client_path.exist?
   end
 
   def caveats
@@ -311,6 +301,11 @@ class EmacsPlusAT31 < EmacsBase
       dependencies (e.g., tree-sitter, libgccjit), reinstall emacs-plus:
         brew reinstall emacs-plus@31
 
+      Note: installing this formula alongside an emacs-plus-app cask is not
+      supported. Both provide emacs and emacsclient in $(brew --prefix)/bin,
+      and Homebrew cannot declare a conflict between a formula and a cask.
+      Keep one or the other installed.
+
       Report any issues to https://github.com/d12frosted/homebrew-emacs-plus
     EOS
   end
@@ -318,8 +313,8 @@ class EmacsPlusAT31 < EmacsBase
   service do
     run [opt_bin/"emacs", "--fg-daemon"]
     keep_alive true
-    log_path "/tmp/homebrew.mxcl.emacs-plus.stdout.log"
-    error_log_path "/tmp/homebrew.mxcl.emacs-plus.stderr.log"
+    log_path var/"log/emacs-plus@31.stdout.log"
+    error_log_path var/"log/emacs-plus@31.stderr.log"
   end
 
   test do
