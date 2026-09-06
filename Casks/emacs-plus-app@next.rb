@@ -1,7 +1,7 @@
 cask "emacs-plus-app@next" do
   # Version format: <emacs-version>-<build-number>
   # Build number corresponds to GitHub Actions run number
-  version "31.1.50-321"
+  version "31.1.50-324"
 
   # Base URL for release assets (lane releases: cask-next-<build>)
   base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-next-#{version.sub(/^[\d.]+-/, "")}"
@@ -13,37 +13,18 @@ cask "emacs-plus-app@next" do
     depends_on macos: :sonoma
 
     if MacOS.version >= :tahoe # macOS 26
-      sha256 "cc4c41746ebd47f84e6bb1f34759a63f37222e7f0729ce073f635a544cb8f7fb"
+      sha256 "6897073a1ebe95cea938cc0214951b70fc662d5cccf0ca8d62130eae927c37dd"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     elsif MacOS.version >= :sequoia # macOS 15
-      sha256 "08b1a6876a382224c7242368ed11417fe7b333d05aa665969cfcdfe8b932c589"
+      sha256 "154765f571020524a7362aab22bc9b51b954faa6d3154f2faf81d41cd6a1020d"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     else # macOS 14 (Sonoma)
-      sha256 "1a47a954a075e8e82bbf3141bc4cc0c35db5f7b4dcdded570b53d13eda4cfc0c"
+      sha256 "60a3c1abc3651efbf3bc59db0bd6d89d96b16a9a31cda9a597e43c30aa457f12"
       url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-14.zip",
           verified: "github.com/d12frosted/homebrew-emacs-plus"
     end
-  end
-  on_intel do
-    # Intel assets can lag behind the arm64 ones. Homebrew treats x86_64 macOS
-    # as a tier 3 configuration and stopped bottling some dependencies for it,
-    # so the Intel build breaks on its own schedule and a release can ship
-    # without it. This pin points at the last release that did produce an Intel
-    # binary, so it is expected to trail the version above from time to time.
-    intel_version = "31.1.50-321"
-    intel_emacs_ver = intel_version.sub(/-\d+$/, "")
-    intel_base_url = base_url.sub(/-\d+$/, "-#{intel_version.sub(/^[\d.]+-/, "")}")
-
-    sha256 "bd05b26b913c717267f2594e007ed13ecf6827011d2173d62913fb96efc74ab5"
-
-    url "#{intel_base_url}/emacs-plus-#{intel_emacs_ver}-x86_64-15.zip",
-        verified: "github.com/d12frosted/homebrew-emacs-plus"
-
-    # The only Intel build targets macOS 15 (built on the macos-15-intel
-    # runner, the sole Intel runner available)
-    depends_on macos: :sequoia
   end
 
   name "Emacs+ (Next)"
@@ -64,6 +45,9 @@ cask "emacs-plus-app@next" do
   depends_on formula: "libgccjit"
   depends_on formula: "gcc"
   depends_on :macos
+  # Prebuilt binaries are arm64 only; on Intel use the formula, which builds
+  # from source. See https://github.com/d12frosted/homebrew-emacs-plus/issues/1002
+  depends_on arch: :arm64
 
   # Install the app
   app "Emacs.app"
