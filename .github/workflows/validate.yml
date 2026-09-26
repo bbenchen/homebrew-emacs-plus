@@ -21,6 +21,12 @@ jobs:
             ruby "$test"
           done
 
+      # Homebrew refuses to load formulae and casks from untrusted taps, and
+      # brew readall below loads all of them. Trust the tap by name first;
+      # it does not need to be installed for that.
+      - name: Trust emacs-plus tap
+        run: brew trust d12frosted/emacs-plus
+
       # brew style requires the files to live inside a tap, so link the
       # checkout into the tap location. Cask/NoOverrides and
       # Cask/OnSystemConditionals are excluded: they demand restructuring
@@ -33,6 +39,12 @@ jobs:
           ln -s "$GITHUB_WORKSPACE" "$TAP_DIR"
           brew style --except-cops Cask/NoOverrides,Cask/OnSystemConditionals \
             "$TAP_DIR/Formula" "$TAP_DIR/Casks"
+
+      # brew tap loads every formula and cask on every OS/arch pair and refuses
+      # the tap when one fails, so run the same check here. Casks that only
+      # declare a url inside on_arm break it on Intel (#1005).
+      - name: Run brew readall on every OS and arch
+        run: brew readall --os=all --arch=all d12frosted/emacs-plus
 
       - name: Validate icons
         run: ruby scripts/validate-icons.rb

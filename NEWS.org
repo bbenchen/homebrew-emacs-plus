@@ -3,6 +3,42 @@
 
 This file documents notable changes to Emacs Plus.
 
+* 2026-09-21
+
+** Improvements
+
+*** Formulas use =post_install_steps=
+
+Homebrew 7.0.0 deprecated the =post_install= method formulas used to run arbitrary Ruby after install ("Calling =post_install= is deprecated! Use =post_install_steps= instead"). With =HOMEBREW_DEVELOPER=1= that deprecation is an error, which is how the nightly builds of every formula started failing in the post-install phase while the build itself succeeded. The replacement is a fixed list of literal steps that Homebrew runs in the post-install sandbox, the same treatment the casks got on 2026-09-08. Every =emacs-plus@N= formula now declares a =post_install_steps= block that runs the same setup as before (info manuals, the custom icon from =build.yml=, re-signing the app bundles, and the =native-lisp= link on Emacs 28 and 29) through =scripts/formula-postinstall= as a =run= step. A step cannot know where the tap checkout is, so =install= leaves a small launcher in =libexec= that execs the script from the checkout; =brew postinstall emacs-plus@N= keeps picking up the current =Library/= and =community/= files that way. Nothing changes for users: =build.yml= icons still apply, =brew postinstall= still re-applies them, and =HOMEBREW_EMACS_PLUS_BUILD_CONFIG= is still honoured.
+
+* 2026-09-15
+
+** Bug fixes
+
+*** =brew tap d12frosted/emacs-plus= needs =brew trust= first
+
+Homebrew refuses to load formulae and casks from a tap that is not trusted with =brew trust=, and =brew tap= loads every formula and cask to verify a tap before accepting it. Until 7.0.0 the tap name on the command line counted as permission to load its files, so =brew tap d12frosted/emacs-plus= got through; Homebrew 7.0.0 (2026-09-13) dropped that exception ([[https://github.com/Homebrew/brew/pull/23864][Homebrew/brew#23864]]). Together this means tapping an untrusted tap fails with "Refusing to load formula ... from untrusted tap" for every file and then "Cannot tap d12frosted/emacs-plus: invalid syntax in tap!". Running =brew trust= after the tap, as the README and the nightly workflow used to suggest, is too late: the trust has to be recorded first, and =brew trust d12frosted/emacs-plus= works fine before the tap is installed.
+
+The README, the release notes and the workflows now trust the tap before tapping it. Existing checkouts keep working since they are already tapped, so you only hit this on a fresh machine.
+
+* 2026-09-08
+
+** Improvements
+
+*** Casks use =postflight_steps=
+
+Homebrew 6.0.22 deprecated the =postflight= and =uninstall_postflight= blocks casks used to run arbitrary Ruby after install, and warns about them on every load ("Calling =postflight= is deprecated! Use =postflight_steps= instead"). The replacement is a fixed list of literal steps that Homebrew runs in a sandbox, so the three casks now run the same setup (quarantine removal, environment injection, custom icon, re-signing) through =scripts/cask-postflight= as a =run= step, and the =bin/emacs= symlink is a declarative =symlink= step that Homebrew also cleans up on uninstall. Nothing changes for users: =build.yml= icons still apply, =brew reinstall --cask= still re-applies them.
+
+One consequence of the sandbox: the postflight can only read =~/.config/emacs-plus= and =~/.emacs-plus-build.yml= from your home directory, so a =HOMEBREW_EMACS_PLUS_BUILD_CONFIG= pointing elsewhere under =$HOME= is not visible to cask installs.
+
+** Bug fixes
+
+*** =brew tap d12frosted/emacs-plus= works again
+
+Dropping the Intel cask builds on 2026-09-05 left the cask =url= only inside the =on_arm= block. =brew tap= loads every cask on every OS and architecture pair before it accepts a tap, and on Intel the casks had no url, so tapping failed with "Invalid cask (macOS N on intel)" and "invalid syntax in tap". Existing checkouts kept working, which is why this went unnoticed for a few days. The url now lives at the top level and =depends_on arch: :arm64= is what refuses the install on Intel. CI runs the same readall check now. See [[https://github.com/d12frosted/homebrew-emacs-plus/issues/1005][#1005]].
+
+The casks also stop passing the =verified:= parameter to =url= and declare =depends_on macos: :sonoma= at the top level instead of a bare =depends_on :macos=: Homebrew 6.0.22 deprecated the former and disabled combining the latter two. The =postflight= deprecation warning from the same release is still there; that migration is a separate change.
+
 * 2026-09-05
 
 ** Breaking changes

@@ -1,30 +1,25 @@
 cask "emacs-plus-app@master" do
   # Version format: <emacs-version>-<build-number>
   # Build number corresponds to GitHub Actions run number
-  version "32.0.50-324"
+  version "32.0.50-347"
 
   # Base URL for release assets (lane releases: cask-master-<build>)
   base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-master-#{version.sub(/^[\d.]+-/, "")}"
   emacs_ver = version.sub(/-\d+$/, "")
 
-  on_arm do
-    # Oldest prebuilt arm64 binary targets macOS 14 (built on the macos-14
-    # runner), so Ventura cannot run it
-    depends_on macos: :sonoma
-
-    if MacOS.version >= :tahoe # macOS 26
-      sha256 "f4c125ee4916178e6bb6fbed23dc3bb80ce59dda54645ed5ae6ccbd478ec1415"
-      url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip",
-          verified: "github.com/d12frosted/homebrew-emacs-plus"
-    elsif MacOS.version >= :sequoia # macOS 15
-      sha256 "95acac7e5dfceaef9e33f7b9b725d15f5b4755b37a43684d441fa01e87e26d93"
-      url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip",
-          verified: "github.com/d12frosted/homebrew-emacs-plus"
-    else # macOS 14 (Sonoma)
-      sha256 "5b1a6b364f11bba47ff8498e02483cd5322e87e3d6a250d0c019ac6ac5679f41"
-      url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-14.zip",
-          verified: "github.com/d12frosted/homebrew-emacs-plus"
-    end
+  # The url lives at the top level on purpose. `brew tap` loads every cask
+  # on every OS/arch pair, and a cask with no url on Intel fails that
+  # check, which broke tapping (#1005). `depends_on arch:` below is what
+  # refuses the install on Intel.
+  if MacOS.version >= :tahoe # macOS 26
+    sha256 "283f283702df7edbd0693749907c34a0c6bbfa4f902699126d05a6bb5fda78f7"
+    url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip"
+  elsif MacOS.version >= :sequoia # macOS 15
+    sha256 "9904c83a20f1152a1f72b4771cae298986e991787cafd419305befe9b99379ac"
+    url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip"
+  else # macOS 14 (Sonoma)
+    sha256 "34b2b7baf5edf7926d50f2114513da8cd47c8dff0e1afd0eb6fc1927a47478c7"
+    url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-14.zip"
   end
 
   name "Emacs+ (Development)"
@@ -39,22 +34,23 @@ cask "emacs-plus-app@master" do
     "emacs-plus-app",
     "emacs-plus-app@next",
   ]
-  # Required for native compilation (JIT) at runtime
-  # - libgccjit: JIT compilation library
-  # - gcc: provides toolchain and libemutls_w.a runtime library
-  depends_on formula: "libgccjit"
-  depends_on formula: "gcc"
-  depends_on :macos
   # Prebuilt binaries are arm64 only; on Intel use the formula, which builds
   # from source. See https://github.com/d12frosted/homebrew-emacs-plus/issues/1002
   depends_on arch: :arm64
+  # Required for native compilation (JIT) at runtime
+  # - gcc: provides toolchain and libemutls_w.a runtime library
+  # - libgccjit: JIT compilation library
+  depends_on formula: "gcc"
+  depends_on formula: "libgccjit"
+  # Oldest prebuilt arm64 binary targets macOS 14 (built on the macos-14
+  # runner), so Ventura cannot run it
+  depends_on macos: :sonoma
 
   # Install the app
   app "Emacs.app"
   app "Emacs Client.app"
-  # Symlink binaries (emacs symlink created in postflight after wrapper is generated)
-  # Note: emacs is symlinked manually in postflight because the wrapper script
-  # is created there and binary stanzas run before postflight
+  # Symlink binaries. emacs itself is a symlink step in postflight_steps:
+  # the wrapper it points at is generated there, after binary stanzas ran
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/emacsclient"
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/ebrowse"
   binary "#{appdir}/Emacs.app/Contents/MacOS/bin/etags"
@@ -64,26 +60,31 @@ cask "emacs-plus-app@master" do
   manpage "#{appdir}/Emacs.app/Contents/Resources/man/man1/ebrowse.1"
   manpage "#{appdir}/Emacs.app/Contents/Resources/man/man1/etags.1"
 
-  # Remove quarantine attribute, inject PATH, and apply custom icon
-  # (shared logic for all emacs-plus-app casks lives in Library/CaskPostflight.rb)
-  postflight do
-    tap = Tap.fetch("d12frosted", "emacs-plus")
-    load "#{tap.path}/Library/CaskPostflight.rb"
-    CaskPostflight.run(self,
-                       emacs_app:        "#{appdir}/Emacs.app",
-                       emacs_client_app: "#{appdir}/Emacs Client.app",
-                       version:          version.major,
-                       homebrew_prefix:  HOMEBREW_PREFIX.to_s)
-  end
-
-  # Clean up emacs symlink on uninstall (since we create it manually in postflight)
-  # Only remove it when it points into this cask's Emacs.app: the formulas
-  # link bin/emacs too, and that symlink is not ours to delete
-  uninstall_postflight do
-    emacs_symlink = "#{HOMEBREW_PREFIX}/bin/emacs"
-    if File.symlink?(emacs_symlink) &&
-       File.readlink(emacs_symlink).start_with?("#{appdir}/Emacs.app/")
-      FileUtils.rm(emacs_symlink)
+  # Post-install setup: quarantine removal, environment injection, custom
+  # icon and re-signing. postflight_steps only takes literal steps, so the
+  # Ruby in Library/ runs through scripts/cask-postflight as a `run` step.
+  # The step runs in Homebrew's sandbox with a scratch HOME; the build.yml
+  # locations are declared so the script can still read them, and network
+  # access is for icons pulled from a URL.
+  postflight_steps do
+    run "{{HOMEBREW_PREFIX}}/Library/Taps/d12frosted/homebrew-emacs-plus/scripts/cask-postflight",
+        args:           ["--emacs-app", "{{appdir}}/Emacs.app",
+                         "--emacs-client-app", "{{appdir}}/Emacs Client.app",
+                         "--version", "{{version.major}}",
+                         "--homebrew-prefix", "{{HOMEBREW_PREFIX}}"],
+        writable_paths: ["~/.config/emacs-plus", "~/.emacs-plus-build.yml"],
+        network_access: true,
+        print_stdout:   true
+    # bin/emacs points at the wrapper the script generates, which is why it
+    # is not a `binary` stanza (those run before postflight). An existing
+    # link, such as the one from an emacs-plus formula, is left alone (the
+    # step would fail on it otherwise), and uninstall only removes a link
+    # that points into this Emacs.app.
+    unless_path_exists "bin/emacs", base: :homebrew_prefix do
+      symlink "Emacs.app/Contents/MacOS/bin/emacs", "bin/emacs",
+              source_base:         :appdir,
+              target_base:         :homebrew_prefix,
+              remove_on_uninstall: true
     end
   end
 
