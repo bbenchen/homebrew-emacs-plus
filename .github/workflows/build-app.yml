@@ -43,9 +43,6 @@ jobs:
           - runner: macos-15
             arch: arm64
             os_name: sequoia
-          - runner: macos-14
-            arch: arm64
-            os_name: sonoma
     runs-on: ${{ matrix.platform.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -149,10 +146,12 @@ jobs:
           # - FD_SETSIZE=10000: Increases file descriptor limit (default ~1024) for LSP/eglot
           # - DARWIN_UNLIMITED_SELECT: Removes macOS select() limit
           # Note: ImageMagick excluded to avoid libomp conflicts (issue #890)
+          # Note: no --enable-locallisppath; it replaces the bundle site-lisp,
+          # so site-start.el never loads. The cask postflight adds Homebrew
+          # site-lisp to load-path from site-start.el instead (issue #1016)
           ./configure \
             CFLAGS="-DFD_SETSIZE=10000 -DDARWIN_UNLIMITED_SELECT -I$(brew --prefix gcc)/include -I$(brew --prefix libgccjit)/include" \
             LDFLAGS="-L$GCC_LIB -Wl,-rpath,$GCC_LIB" \
-            --enable-locallisppath=$HOMEBREW_PREFIX/share/emacs/site-lisp \
             --with-ns \
             --with-native-compilation=aot \
             --with-xwidgets \
@@ -482,9 +481,6 @@ jobs:
           - runner: macos-15
             arch: arm64
             os_name: sequoia
-          - runner: macos-14
-            arch: arm64
-            os_name: sonoma
     runs-on: ${{ matrix.platform.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -588,10 +584,12 @@ jobs:
           # - FD_SETSIZE=10000: Increases file descriptor limit (default ~1024) for LSP/eglot
           # - DARWIN_UNLIMITED_SELECT: Removes macOS select() limit
           # Note: ImageMagick excluded to avoid libomp conflicts (issue #890)
+          # Note: no --enable-locallisppath; it replaces the bundle site-lisp,
+          # so site-start.el never loads. The cask postflight adds Homebrew
+          # site-lisp to load-path from site-start.el instead (issue #1016)
           ./configure \
             CFLAGS="-DFD_SETSIZE=10000 -DDARWIN_UNLIMITED_SELECT -I$(brew --prefix gcc)/include -I$(brew --prefix libgccjit)/include" \
             LDFLAGS="-L$GCC_LIB -Wl,-rpath,$GCC_LIB" \
-            --enable-locallisppath=$HOMEBREW_PREFIX/share/emacs/site-lisp \
             --with-ns \
             --with-native-compilation=aot \
             --with-xwidgets \
@@ -921,9 +919,6 @@ jobs:
           - runner: macos-15
             arch: arm64
             os_name: sequoia
-          - runner: macos-14
-            arch: arm64
-            os_name: sonoma
     runs-on: ${{ matrix.platform.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -1027,10 +1022,12 @@ jobs:
           # - FD_SETSIZE=10000: Increases file descriptor limit (default ~1024) for LSP/eglot
           # - DARWIN_UNLIMITED_SELECT: Removes macOS select() limit
           # Note: ImageMagick excluded to avoid libomp conflicts (issue #890)
+          # Note: no --enable-locallisppath; it replaces the bundle site-lisp,
+          # so site-start.el never loads. The cask postflight adds Homebrew
+          # site-lisp to load-path from site-start.el instead (issue #1016)
           ./configure \
             CFLAGS="-DFD_SETSIZE=10000 -DDARWIN_UNLIMITED_SELECT -I$(brew --prefix gcc)/include -I$(brew --prefix libgccjit)/include" \
             LDFLAGS="-L$GCC_LIB -Wl,-rpath,$GCC_LIB" \
-            --enable-locallisppath=$HOMEBREW_PREFIX/share/emacs/site-lisp \
             --with-ns \
             --with-native-compilation=aot \
             --with-xwidgets \
@@ -1371,7 +1368,7 @@ jobs:
           # Every build leg must have uploaded its binary; a release with a
           # missing asset would leave the cask pointing at a dead URL.
           missing=""
-          for target in arm64-14 arm64-15 arm64-26; do
+          for target in arm64-15 arm64-26; do
             if ! ls artifacts/*/emacs-plus-*-"$target".zip >/dev/null 2>&1; then
               missing="$missing $target"
             fi
@@ -1510,7 +1507,7 @@ jobs:
           # Every build leg must have uploaded its binary; a release with a
           # missing asset would leave the cask pointing at a dead URL.
           missing=""
-          for target in arm64-14 arm64-15 arm64-26; do
+          for target in arm64-15 arm64-26; do
             if ! ls artifacts/*/emacs-plus-*-"$target".zip >/dev/null 2>&1; then
               missing="$missing $target"
             fi
@@ -1652,7 +1649,7 @@ jobs:
           # Every build leg must have uploaded its binary; a release with a
           # missing asset would leave the cask pointing at a dead URL.
           missing=""
-          for target in arm64-14 arm64-15 arm64-26; do
+          for target in arm64-15 arm64-26; do
             if ! ls artifacts/*/emacs-plus-*-"$target".zip >/dev/null 2>&1; then
               missing="$missing $target"
             fi
