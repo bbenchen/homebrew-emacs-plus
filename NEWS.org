@@ -3,6 +3,40 @@
 
 This file documents notable changes to Emacs Plus.
 
+* 2026-10-03
+
+** Bug fixes
+
+*** =Emacs Client.app= no longer starts a second Emacs
+
+After running =emacsclient=, =Emacs Client.app= brings Emacs to the front. Since 2025-12-28 it did that with =open -a Emacs=, which asks LaunchServices for an =Emacs.app= by name. LaunchServices answers with the one launched most recently from Finder, the Dock or Spotlight, not with the daemon =emacsclient= talks to. So once a second =Emacs.app= was around, for example a copy in =/Applications= that was launched once, or another =emacs-plus@N=, every click on =Emacs Client.app= started that other Emacs next to the daemon, with its own frame. See [[https://github.com/d12frosted/homebrew-emacs-plus/discussions/1020][#1020]].
+
+=Emacs Client.app= now activates Emacs with =tell application id= again, which talks to the running Emacs directly. The bundle id is kept in a variable, so compiling the script does not need =Emacs.app= to be installed, which is why =open -a= replaced it in the first place.
+
+Formula users need to reinstall to get the fix, cask users get it with the next build:
+
+#+begin_src bash
+brew reinstall emacs-plus@31   # or the version you use
+#+end_src
+
+If you copied =Emacs Client.app= to =/Applications=, copy it again after reinstalling: a copy does not update by itself.
+
+*** A copied =Emacs Client.app= keeps working after upgrades
+
+Formula builds of =Emacs Client.app= called =emacsclient= through the versioned keg path, e.g. =/opt/homebrew/Cellar/emacs-plus@31/31.1/bin/emacsclient=. Upgrades replace that path, so a copy in =/Applications= quietly stopped working after the next version or revision bump. It now calls =emacsclient= through the formula's =opt= path (=$(brew --prefix emacs-plus@31)=), which follows upgrades.
+
+The formula caveats and the README no longer suggest Finder aliases either: an alias points at the versioned keg it was made for and stops working once an upgrade replaces it. Formulas don't install apps into =/Applications=, so the caveats now point to the =emacs-plus-app= casks for that and describe the two formula options: copying (copy =Emacs.app= again after each upgrade) and symlinking (the links follow upgrades, but Spotlight may not show them).
+
+To pick this up, reinstall the formula, and copy =Emacs Client.app= to =/Applications= again if you use a copy.
+
+*** org-protocol links no longer start a second Emacs
+
+=Emacs Client.app= handled =org-protocol://= links with =emacsclient -n URL=. With a daemon that had no frame yet, for example one started by =brew services= or a LaunchAgent, the URL went to the daemon's invisible frame, so nothing showed up, and bringing Emacs to the front started a second Emacs, because macOS does not know such a daemon as an app until it opens its first frame. With no daemon running at all, the URL was dropped and a plain Emacs started instead.
+
+The handler now runs =emacsclient -r -a '' -n URL=: =-r= reuses the current frame and creates one only when there is none, and =-a ''= starts the daemon when it is not running, like the other handlers do.
+
+Formula users need to reinstall (and copy =Emacs Client.app= to =/Applications= again if they use a copy), cask users get it with the next build.
+
 * 2026-09-27
 
 ** Improvements
