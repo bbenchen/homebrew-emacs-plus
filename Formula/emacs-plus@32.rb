@@ -118,6 +118,8 @@ class EmacsPlusAT32 < EmacsBase
     ENV.append "LDFLAGS", "-L#{Utils::Path.formula_opt_lib("sqlite")}"
     ENV.append "LDFLAGS", "-L#{gcc_lib}"
     ENV.append "LDFLAGS", "-Wl,-rpath,#{gcc_lib}"
+    # libgccjit's JIT linker needs GCC runtime libraries during configure and AOT compilation.
+    ENV.prepend_path "LIBRARY_PATH", build_library_path
 
     args <<
       if build.with? "dbus"
@@ -138,6 +140,9 @@ class EmacsPlusAT32 < EmacsBase
 
     # Apply custom patches from build.yml
     apply_custom_patches
+
+    # Preload native-comp driver options into the dump (works with -Q)
+    write_site_init
 
     if (build.with? "cocoa") && (build.without? "x11")
       args << "--with-ns" << "--disable-ns-self-contained"
