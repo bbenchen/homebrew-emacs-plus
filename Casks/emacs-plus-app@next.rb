@@ -1,7 +1,7 @@
 cask "emacs-plus-app@next" do
   # Version format: <emacs-version>-<build-number>
   # Build number corresponds to GitHub Actions run number
-  version "31.1.50-394"
+  version "31.1.90-417"
 
   # Base URL for release assets (lane releases: cask-next-<build>)
   base_url = "https://github.com/d12frosted/homebrew-emacs-plus/releases/download/cask-next-#{version.sub(/^[\d.]+-/, "")}"
@@ -12,10 +12,10 @@ cask "emacs-plus-app@next" do
   # check, which broke tapping (#1005). `depends_on arch:` below is what
   # refuses the install on Intel.
   if MacOS.version >= :tahoe # macOS 26
-    sha256 "13a55a2da694bfbb0bb38afa15ea559a1757c6fa0af8e90a082176ce7ab5e6cf"
+    sha256 "d2fa49e432a5bbbd6e443cb03e2433c1239bdc7e3b3d5991e34ce06770ade15a"
     url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-26.zip"
   else # macOS 15 (Sequoia)
-    sha256 "8a6122bdf2700ae0b1ddea0a256f8ea50112ee9857261a18b763a9e3a21e9367"
+    sha256 "2acfc1c8b6b35845d6939516a9a0708de531c4e3ef3b20f7c51c68d4e6107329"
     url "#{base_url}/emacs-plus-#{emacs_ver}-arm64-15.zip"
   end
 
@@ -65,15 +65,17 @@ cask "emacs-plus-app@next" do
   # The step runs in Homebrew's sandbox with a scratch HOME; the build.yml
   # locations are declared so the script can still read them, and network
   # access is for icons pulled from a URL.
-  # The tap lives in HOMEBREW_REPOSITORY/Library/Taps, which is not under
+  # The tap lives in HOMEBREW_LIBRARY/Taps, which is not under
   # HOMEBREW_PREFIX when bin/brew links into a separate repository, and
   # steps have no token for it. So bash reads it from the environment brew
   # exports, falling back to the prefix (the default layout); Homebrew
   # expands {{HOMEBREW_PREFIX}} before bash sees the program.
+  # HOMEBREW_REPOSITORY is not used: nix-homebrew points it at a stub
+  # directory and keeps the library in the prefix.
   postflight_steps do
     run "/bin/bash",
         args:           ["-c",
-                         'exec "${HOMEBREW_REPOSITORY:-{{HOMEBREW_PREFIX}}}/Library/Taps/' \
+                         'exec "${HOMEBREW_LIBRARY:-{{HOMEBREW_PREFIX}}/Library}/Taps/' \
                          'd12frosted/homebrew-emacs-plus/scripts/cask-postflight" "$@"',
                          "cask-postflight",
                          "--emacs-app", "{{appdir}}/Emacs.app",
